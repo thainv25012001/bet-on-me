@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 import 'package:bet_on_me/features/auth/data/auth_service.dart';
 import 'package:bet_on_me/features/auth/presentation/screens/signin_screen.dart';
+import 'package:bet_on_me/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:bet_on_me/features/home/presentation/widgets/goal_card.dart';
 import 'package:bet_on_me/features/home/presentation/widgets/task_item.dart';
 
@@ -57,6 +58,39 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final _authService = AuthService();
+  String _userName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    try {
+      final data = await _authService.getMe();
+      if (mounted) {
+        setState(() {
+          _userName = (data['name'] as String?) ?? (data['email'] as String? ?? '');
+        });
+      }
+    } catch (_) {
+      // silently fail — name stays empty
+    }
+  }
+
+  String get _displayName => _userName.isNotEmpty ? _userName : '…';
+  String get _initial => _userName.isNotEmpty ? _userName[0].toUpperCase() : '?';
+
+  Future<void> _openCreateGoal() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const CreateGoalScreen()),
+    );
+    if (created == true) {
+      // TODO: refresh real goals list when implemented
+    }
+  }
 
   Future<void> _logout() async {
     await _authService.clearToken();
@@ -136,9 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: AppColors.goldDim,
-                    child: const Text(
-                      'C',
-                      style: TextStyle(
+                    child: Text(
+                      _initial,
+                      style: const TextStyle(
                         color: AppColors.gold,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -146,19 +180,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Champ',
-                        style: TextStyle(
+                        _displayName,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
+                      const SizedBox(height: 2),
+                      const Text(
                         'Stay consistent 🔥',
                         style: TextStyle(
                           color: AppColors.textMuted,
@@ -214,9 +248,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 20),
 
             // Greeting
-            const Text(
-              'Good morning, Champ 👋',
-              style: TextStyle(
+            Text(
+              'Good morning, $_displayName 👋',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -258,6 +292,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             const SizedBox(height: 14),
+
+            // ── Create new goal card ────────────────────────────────
+            _NewGoalCard(onTap: _openCreateGoal),
+
+            const SizedBox(height: 16),
 
             // Goal cards
             ListView.builder(
@@ -317,6 +356,47 @@ class _HomeScreenState extends State<HomeScreen> {
       'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
     ];
     return '${days[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
+  }
+}
+
+// ── New goal card ─────────────────────────────────────────────────────────────
+
+class _NewGoalCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _NewGoalCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.gold.withAlpha(80),
+            strokeAlign: BorderSide.strokeAlignInside,
+          ),
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add_circle_outline, color: AppColors.gold, size: 40),
+            SizedBox(height: 10),
+            Text(
+              'Create a new goal',
+              style: TextStyle(
+                color: AppColors.gold,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

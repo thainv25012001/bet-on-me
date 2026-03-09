@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
+from app.schemas.task import TaskOut
 
 
 class PlanCreate(BaseModel):
@@ -13,6 +14,7 @@ class PlanOut(BaseModel):
     goal_id: uuid.UUID
     total_days: int | None
     generated_by: str
+    tasks: list[TaskOut]
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -14,8 +14,9 @@ class Goal(UUIDBase):
     )
     title: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    target_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    stake_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    target_date: Mapped[date] = mapped_column(Date, nullable=False)
+    stake_per_day: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(Text, default="active", nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="goals")  # noqa: F821

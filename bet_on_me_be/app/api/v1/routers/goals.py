@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.goal import GoalCreate, GoalUpdate, GoalOut
+from app.schemas.goal import GoalCreate, GoalUpdate, GoalOut, GoalWithPlanOut
 from app.schemas.common import success_response
 from app.services.goal_service import GoalService
 
@@ -21,7 +21,7 @@ async def list_goals(
     return success_response([GoalOut.model_validate(g) for g in goals])
 
 
-@router.post("")
+@router.post("", response_model=GoalWithPlanOut, status_code=201)
 async def create_goal(
     data: GoalCreate,
     current_user: User = Depends(get_current_user),
@@ -29,7 +29,7 @@ async def create_goal(
 ):
     service = GoalService(db)
     goal = await service.create_goal(current_user, data)
-    return success_response(GoalOut.model_validate(goal))
+    return success_response(GoalWithPlanOut.model_validate(goal))
 
 
 @router.get("/{goal_id}")

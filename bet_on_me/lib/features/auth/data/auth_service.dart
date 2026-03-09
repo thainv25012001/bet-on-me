@@ -33,6 +33,12 @@ class AuthService {
     return prefs.getString(_tokenKey);
   }
 
+  Future<Map<String, dynamic>> getMe() async {
+    final token = await getStoredToken();
+    final response = await ApiClient.get('/api/v1/users/me', token: token);
+    return response['data'] as Map<String, dynamic>;
+  }
+
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
