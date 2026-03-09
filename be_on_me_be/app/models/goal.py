@@ -1,0 +1,23 @@
+import uuid
+from datetime import date
+from sqlalchemy import Text, Integer, Date, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.models.base import UUIDBase
+
+
+class Goal(UUIDBase):
+    __tablename__ = "goals"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    target_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    stake_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(Text, default="active", nullable=False)
+
+    user: Mapped["User"] = relationship("User", back_populates="goals")  # noqa: F821
+    plans: Mapped[list["Plan"]] = relationship("Plan", back_populates="goal")  # noqa: F821
+    stakes: Mapped[list["Stake"]] = relationship("Stake", back_populates="goal")  # noqa: F821
