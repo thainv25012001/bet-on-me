@@ -34,3 +34,30 @@ BetOnMe also gamifies the experience by tracking progress, streaks, and mileston
 By combining goal planning, accountability, and gamification, BetOnMe transforms good intentions into consistent action.
 
 Bet on yourself. Execute daily. Win your goals.
+
+
+# Design 
+1. Mobile
+
+ - Flutter
+
+2. Backend
+
+ - FastAPI
+ - Python
+
+3. Database
+
+ - PostgreSQL
+
+4. AI
+
+ - OpenAI API
+
+5. Payment
+
+ - Stripe
+
+6. Notification
+
+ - Firebase

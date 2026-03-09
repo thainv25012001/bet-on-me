@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/signin_screen.dart';
+import 'package:bet_on_me/core/theme/app_theme.dart';
+import 'package:bet_on_me/features/auth/presentation/screens/signin_screen.dart';
 
 void main() {
   runApp(const BetOnMeApp());
@@ -13,14 +14,7 @@ class BetOnMeApp extends StatelessWidget {
     return MaterialApp(
       title: 'BetOnMe',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.dark(
-          primary: const Color(0xFFFFB800),
-          surface: const Color(0xFF0A0A14),
-        ),
-        scaffoldBackgroundColor: const Color(0xFF0A0A14),
-        fontFamily: 'Roboto',
-      ),
+      theme: AppTheme.dark,
       home: const SignInScreen(),
     );
   }
