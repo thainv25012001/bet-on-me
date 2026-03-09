@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
+import 'package:bet_on_me/core/services/api_client.dart';
+import 'package:bet_on_me/features/auth/data/auth_service.dart';
 import 'package:bet_on_me/features/auth/presentation/widgets/auth_header.dart';
 import 'package:bet_on_me/features/auth/presentation/widgets/auth_text_field.dart';
 import 'package:bet_on_me/features/auth/presentation/widgets/or_divider.dart';
 import 'package:bet_on_me/features/auth/presentation/widgets/social_sign_in_button.dart';
+import 'package:bet_on_me/features/home/presentation/screens/home_screen.dart';
 import 'signup_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -17,6 +20,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -133,13 +137,36 @@ class _SignInScreenState extends State<SignInScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading
                       ? null
-                      : () {
+                      : () async {
                           if (_formKey.currentState!.validate()) {
                             setState(() => _isLoading = true);
-                            // TODO: wire up auth
-                            Future.delayed(const Duration(seconds: 2), () {
+                            try {
+                              await _authService.login(
+                                email: _emailController.text.trim(),
+                                password: _passwordController.text,
+                              );
+                              if (!mounted) return;
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                                (_) => false,
+                              );
+                            } on ApiException catch (e) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(e.message),
+                                  backgroundColor: Colors.red.shade700,
+                                ),
+                              );
+                            } catch (_) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Network error.')),
+                              );
+                            } finally {
                               if (mounted) setState(() => _isLoading = false);
-                            });
+                            }
                           }
                         },
                   style: ElevatedButton.styleFrom(
