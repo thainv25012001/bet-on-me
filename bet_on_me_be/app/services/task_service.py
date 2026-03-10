@@ -24,9 +24,12 @@ class TaskService:
             raise Forbidden()
         return plan
 
-    async def list_tasks(self, plan_id: uuid.UUID, user: User) -> list[Task]:
+    async def list_tasks(self, plan_id: uuid.UUID, user: User, page: int, page_size: int) -> tuple[list[Task], int]:
         await self._check_plan_ownership(plan_id, user)
-        return await self.repo.get_by_plan(plan_id)
+        skip = (page - 1) * page_size
+        items = await self.repo.get_by_plan(plan_id, skip=skip, limit=page_size)
+        total = await self.repo.count_by_plan(plan_id)
+        return items, total
 
     async def create_task(self, plan_id: uuid.UUID, user: User, data: TaskCreate) -> Task:
         await self._check_plan_ownership(plan_id, user)

@@ -2,6 +2,7 @@ import json
 import uuid
 from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import set_committed_value
 from app.repositories.goal_repository import GoalRepository
 from app.schemas.goal import GoalCreate, GoalUpdate
 from app.models.goal import Goal
@@ -16,8 +17,11 @@ class GoalService:
     def __init__(self, db: AsyncSession) -> None:
         self.repo = GoalRepository(db)
 
-    async def list_goals(self, user: User) -> list[Goal]:
-        return await self.repo.get_by_user(user.id)
+    async def list_goals(self, user: User, page: int, page_size: int) -> tuple[list[Goal], int]:
+        skip = (page - 1) * page_size
+        items = await self.repo.get_by_user(user.id, skip=skip, limit=page_size)
+        total = await self.repo.count_by_user(user.id)
+        return items, total
 
     async def create_goal(self, user: User, data: GoalCreate) -> Goal:
         db = self.repo.db
@@ -53,14 +57,11 @@ class GoalService:
             # 5. Single commit
             await db.commit()
 
-            # 6. Refresh all for response
+            # 6. Refresh goal; plan/tasks have Python-side defaults, no refresh needed
             await db.refresh(goal)
-            await db.refresh(plan)
-            for task in tasks:
-                await db.refresh(task)
 
             # Attach for GoalWithPlanOut serialisation
-            plan.tasks = tasks
+            set_committed_value(plan, "tasks", tasks)
             goal.plan = plan
             return goal
 

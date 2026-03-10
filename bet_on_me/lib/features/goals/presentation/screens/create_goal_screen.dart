@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 import 'package:bet_on_me/core/services/api_client.dart';
+import 'package:bet_on_me/features/auth/data/auth_service.dart';
+import 'package:bet_on_me/features/auth/presentation/screens/signin_screen.dart';
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
 
 class CreateGoalScreen extends StatefulWidget {
@@ -158,6 +160,21 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
       Navigator.pop(context, true); // true = goal was created
     } on ApiException catch (e) {
       if (!mounted) return;
+      if (e.statusCode == 401) {
+        await AuthService().clearToken();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your session has expired. Please sign in again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const SignInScreen()),
+          (_) => false,
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.message),

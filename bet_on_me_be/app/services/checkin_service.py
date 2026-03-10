@@ -29,9 +29,12 @@ class CheckinService:
             raise Forbidden()
         return task
 
-    async def list_checkins(self, task_id: uuid.UUID, user: User) -> list[Checkin]:
+    async def list_checkins(self, task_id: uuid.UUID, user: User, page: int, page_size: int) -> tuple[list[Checkin], int]:
         await self._verify_task_ownership(task_id, user)
-        return await self.repo.get_by_task(task_id)
+        skip = (page - 1) * page_size
+        items = await self.repo.get_by_task(task_id, skip=skip, limit=page_size)
+        total = await self.repo.count_by_task(task_id)
+        return items, total
 
     async def create_checkin(self, task_id: uuid.UUID, user: User, data: CheckinCreate) -> Checkin:
         await self._verify_task_ownership(task_id, user)

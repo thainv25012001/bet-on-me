@@ -9,8 +9,11 @@ class PaymentService:
     def __init__(self, db: AsyncSession) -> None:
         self.repo = PaymentRepository(db)
 
-    async def list_payments(self, user: User) -> list[Payment]:
-        return await self.repo.get_by_user(user.id)
+    async def list_payments(self, user: User, page: int, page_size: int) -> tuple[list[Payment], int]:
+        skip = (page - 1) * page_size
+        items = await self.repo.get_by_user(user.id, skip=skip, limit=page_size)
+        total = await self.repo.count_by_user(user.id)
+        return items, total
 
     async def create_payment(self, user: User, data: PaymentCreate) -> Payment:
         return await self.repo.create(user_id=user.id, **data.model_dump())

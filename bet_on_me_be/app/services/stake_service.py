@@ -21,9 +21,12 @@ class StakeService:
             raise Forbidden()
         return goal
 
-    async def list_stakes(self, goal_id: uuid.UUID, user: User) -> list[Stake]:
+    async def list_stakes(self, goal_id: uuid.UUID, user: User, page: int, page_size: int) -> tuple[list[Stake], int]:
         await self._check_goal_ownership(goal_id, user)
-        return await self.repo.get_by_goal(goal_id)
+        skip = (page - 1) * page_size
+        items = await self.repo.get_by_goal(goal_id, skip=skip, limit=page_size)
+        total = await self.repo.count_by_goal(goal_id)
+        return items, total
 
     async def create_stake(self, goal_id: uuid.UUID, user: User, data: StakeCreate) -> Stake:
         await self._check_goal_ownership(goal_id, user)
