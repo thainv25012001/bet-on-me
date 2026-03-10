@@ -2,49 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 import 'package:bet_on_me/features/auth/data/auth_service.dart';
 import 'package:bet_on_me/features/auth/presentation/screens/signin_screen.dart';
+import 'package:bet_on_me/features/goals/data/goal_service.dart';
 import 'package:bet_on_me/features/goals/presentation/screens/create_goal_screen.dart';
-import 'package:bet_on_me/features/home/presentation/widgets/goal_card.dart';
-import 'package:bet_on_me/features/home/presentation/widgets/task_item.dart';
-
-// ── Mock data models ─────────────────────────────────────────────────────────
-
-class _Goal {
-  final String emoji;
-  final String title;
-  final List<GoalTask> tasks;
-  const _Goal({required this.emoji, required this.title, required this.tasks});
-}
-
-final _mockGoals = <_Goal>[
-  _Goal(
-    emoji: '🚀',
-    title: 'Launch side project',
-    tasks: const [
-      GoalTask(title: 'Set up repo & CI/CD', isComplete: true),
-      GoalTask(title: 'Build MVP landing page', isComplete: true),
-      GoalTask(title: 'Write launch blog post', isComplete: false),
-      GoalTask(title: 'Submit to Product Hunt', isComplete: false),
-    ],
-  ),
-  _Goal(
-    emoji: '💪',
-    title: 'Get fit',
-    tasks: const [
-      GoalTask(title: 'Morning run – 5 km', isComplete: true),
-      GoalTask(title: 'Strength training session', isComplete: false),
-      GoalTask(title: 'Meal prep for the week', isComplete: false),
-    ],
-  ),
-  _Goal(
-    emoji: '📚',
-    title: 'Read 12 books this year',
-    tasks: const [
-      GoalTask(title: 'Read 20 pages of current book', isComplete: true),
-      GoalTask(title: 'Write chapter summary note', isComplete: true),
-      GoalTask(title: 'Pick next book from reading list', isComplete: false),
-    ],
-  ),
-];
+import 'package:bet_on_me/features/goals/presentation/screens/goal_detail_screen.dart';
 
 // ── HomeScreen ────────────────────────────────────────────────────────────────
 
@@ -58,12 +18,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final _authService = AuthService();
+  final _goalService = GoalService();
   String _userName = '';
+  List<Map<String, dynamic>> _goals = [];
+  bool _goalsLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _loadGoals();
   }
 
   Future<void> _loadUser() async {
@@ -79,6 +43,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadGoals() async {
+    try {
+      final goals = await _goalService.listGoals();
+      if (mounted) {
+        setState(() {
+          _goals = goals;
+          _goalsLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _goalsLoading = false);
+    }
+  }
+
   String get _displayName => _userName.isNotEmpty ? _userName : '…';
   String get _initial => _userName.isNotEmpty ? _userName[0].toUpperCase() : '?';
 
@@ -88,7 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const CreateGoalScreen()),
     );
     if (created == true) {
-      // TODO: refresh real goals list when implemented
+      setState(() => _goalsLoading = true);
+      await _loadGoals();
     }
   }
 
@@ -229,15 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Dashboard body ──────────────────────────────────────────────────────
 
   Widget _buildDashboard() {
-    final completedGoals = _mockGoals
-        .where((g) => g.tasks.every((t) => t.isComplete))
+    final activeGoals = _goals
+        .where((g) => (g['status'] as String?) == 'active')
         .length;
-    final activeGoals = _mockGoals.length - completedGoals;
-
-    final totalTasks =
-        _mockGoals.fold<int>(0, (sum, g) => sum + g.tasks.length);
-    final completedTasks = _mockGoals.fold<int>(
-        0, (sum, g) => sum + g.tasks.where((t) => t.isComplete).length);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -268,14 +241,11 @@ class _HomeScreenState extends State<HomeScreen> {
             // Stats row
             Row(
               children: [
-                _StatChip(label: '🔥 7-day streak', value: '7'),
+                const _StatChip(label: '🔥 7-day streak', value: '7'),
                 const SizedBox(width: 12),
-                _StatChip(
-                    label: 'Active goals', value: '$activeGoals'),
+                _StatChip(label: 'Active goals', value: '$activeGoals'),
                 const SizedBox(width: 12),
-                _StatChip(
-                    label: 'Tasks today',
-                    value: '$completedTasks/$totalTasks'),
+                const _StatChip(label: 'Tasks today', value: '0/0'),
               ],
             ),
 
@@ -293,22 +263,80 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 14),
 
-            // ── Create new goal card ────────────────────────────────
+            // Create new goal card
             _NewGoalCard(onTap: _openCreateGoal),
 
             const SizedBox(height: 16),
 
-            // Goal cards
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _mockGoals.length,
-              itemBuilder: (_, i) => GoalCard(
-                emoji: _mockGoals[i].emoji,
-                title: _mockGoals[i].title,
-                tasks: _mockGoals[i].tasks,
+            // Goal list
+            if (_goalsLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: CircularProgressIndicator(color: AppColors.gold),
+                ),
+              )
+            else if (_goals.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: Text(
+                    'No goals yet. Create your first one!',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _goals.length,
+                itemBuilder: (_, i) {
+                  final goal = _goals[i];
+                  final id = goal['id'] as String? ?? '';
+                  final title = goal['title'] as String? ?? 'Untitled';
+                  return GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GoalDetailScreen(
+                          goalId: id,
+                          goalTitle: title,
+                        ),
+                      ),
+                    ),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.textMuted,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-            ),
 
             const SizedBox(height: 20),
           ],
