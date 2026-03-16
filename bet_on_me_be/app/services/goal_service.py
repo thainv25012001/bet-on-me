@@ -25,15 +25,17 @@ class GoalService:
 
     async def create_goal(self, user: User, data: GoalCreate) -> Goal:
         db = self.repo.db
+
+        # 1. Call OpenAI before touching the DB so the connection isn't held
+        #    open during a potentially slow HTTP round-trip.
+        duration = (data.target_date - data.start_date).days
+        tasks_data = await _generate_tasks(data.title, duration)
+
         try:
-            # 1. Create goal row
+            # 2. Create goal row
             goal = Goal(user_id=user.id, **data.model_dump())
             db.add(goal)
             await db.flush()  # assigns goal.id
-
-            # 2. Call OpenAI
-            duration = (data.target_date - data.start_date).days
-            tasks_data = await _generate_tasks(data.title, duration)
 
             # 3. Create plan row
             plan = Plan(goal_id=goal.id, total_days=duration, generated_by="ai")

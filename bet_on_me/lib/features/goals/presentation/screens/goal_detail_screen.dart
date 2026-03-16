@@ -227,25 +227,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.gold),
             )
-          : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      'Failed to load plan:\n$_error',
-                      style: const TextStyle(color: AppColors.textMuted),
-                      textAlign: TextAlign.center,
-                    ),
+          : (_error != null || _totalDays == 0)
+              ? const Center(
+                  child: Text(
+                    'No plan found for this goal.',
+                    style: TextStyle(color: AppColors.textMuted),
                   ),
                 )
-              : _totalDays == 0
-                  ? const Center(
-                      child: Text(
-                        'No plan found for this goal.',
-                        style: TextStyle(color: AppColors.textMuted),
-                      ),
-                    )
-                  : _buildDayList(),
+              : _buildDayList(),
     );
   }
 
