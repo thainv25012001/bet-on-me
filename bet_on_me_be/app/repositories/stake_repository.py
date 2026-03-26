@@ -11,7 +11,7 @@ class StakeRepository(BaseRepository[Stake]):
 
     async def get_by_goal(self, goal_id: uuid.UUID, skip: int = 0, limit: int = 20) -> list[Stake]:
         result = await self.db.execute(
-            select(Stake).where(Stake.goal_id == goal_id).offset(skip).limit(limit)
+            select(Stake).where(Stake.goal_id == goal_id).order_by(Stake.created_at.desc()).offset(skip).limit(limit)
         )
         return list(result.scalars().all())
 

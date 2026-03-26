@@ -12,7 +12,7 @@ class PlanRepository(BaseRepository[Plan]):
 
     async def get_by_goal(self, goal_id: uuid.UUID, skip: int = 0, limit: int = 20) -> list[Plan]:
         result = await self.db.execute(
-            select(Plan).where(Plan.goal_id == goal_id).options(selectinload(Plan.tasks)).offset(skip).limit(limit)
+            select(Plan).where(Plan.goal_id == goal_id).options(selectinload(Plan.tasks)).order_by(Plan.created_at.desc()).offset(skip).limit(limit)
         )
         return list(result.scalars().all())
 

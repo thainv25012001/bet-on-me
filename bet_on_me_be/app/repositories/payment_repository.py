@@ -11,7 +11,7 @@ class PaymentRepository(BaseRepository[Payment]):
 
     async def get_by_user(self, user_id: uuid.UUID, skip: int = 0, limit: int = 20) -> list[Payment]:
         result = await self.db.execute(
-            select(Payment).where(Payment.user_id == user_id).offset(skip).limit(limit)
+            select(Payment).where(Payment.user_id == user_id).order_by(Payment.created_at.desc()).offset(skip).limit(limit)
         )
         return list(result.scalars().all())
 

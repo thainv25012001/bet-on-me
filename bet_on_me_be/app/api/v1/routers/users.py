@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.user import UserUpdate, UserOut
+from app.schemas.user import UserUpdate, UserOut, ChangePasswordRequest
 from app.schemas.common import success_response
 from app.services.user_service import UserService
 
@@ -24,3 +24,14 @@ async def update_me(
     service = UserService(db)
     user = await service.update_profile(current_user, data)
     return success_response(UserOut.model_validate(user))
+
+
+@router.post("/me/change-password")
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = UserService(db)
+    result = await service.change_password(current_user, data.current_password, data.new_password)
+    return success_response(result)

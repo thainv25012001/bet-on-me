@@ -1,14 +1,42 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.utils.exceptions import AppException
 from app.schemas.common import error_response
-from app.api.v1.routers import auth, users, goals, plans, tasks, checkins, stakes, payments
+from app.kafka.producer import start_producer, stop_producer
+from app.kafka.consumer import start_consumer
+from app.api.v1.routers import auth, users, goals, plans, tasks, stakes, payments
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Bet on Me API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ── Startup ──────────────────────────────────────────────────────────────
+    await start_producer()
+    consumer_task = await start_consumer()
+
+    def _on_consumer_done(task: asyncio.Task) -> None:
+        if not task.cancelled() and task.exception() is not None:
+            logger.error("Kafka consumer crashed: %s", task.exception())
+
+    consumer_task.add_done_callback(_on_consumer_done)
+
+    yield
+
+    # ── Shutdown ─────────────────────────────────────────────────────────────
+    consumer_task.cancel()
+    try:
+        await consumer_task
+    except asyncio.CancelledError:
+        pass
+    await stop_producer()
+
+
+app = FastAPI(title="Bet on Me API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,6 +76,5 @@ app.include_router(users.router, prefix=PREFIX)
 app.include_router(goals.router, prefix=PREFIX)
 app.include_router(plans.router, prefix=PREFIX)
 app.include_router(tasks.router, prefix=PREFIX)
-app.include_router(checkins.router, prefix=PREFIX)
 app.include_router(stakes.router, prefix=PREFIX)
 app.include_router(payments.router, prefix=PREFIX)

@@ -10,6 +10,7 @@ class GoalCreate(BaseModel):
     start_date: date
     target_date: date
     stake_per_day: int
+    hours_per_day: float
 
 
 class GoalUpdate(BaseModel):

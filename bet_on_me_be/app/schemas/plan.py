@@ -14,6 +14,8 @@ class PlanOut(BaseModel):
     goal_id: uuid.UUID
     total_days: int | None
     generated_by: str
+    overview: str | None
+    hours_per_day: float | None
     tasks: list[TaskOut]
     created_at: datetime
 

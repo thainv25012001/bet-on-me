@@ -24,3 +24,6 @@ When refactoring Flutter widgets, always include:
    Explain common mistakes developers make when structuring widgets.
 
 Focus on modular, readable, and maintainable Flutter UI design.
+
+6. **system consistency**
+   Make sure the system using the same design pattern and common varible and consisten throgh whole application, update if the component do not consistence to application

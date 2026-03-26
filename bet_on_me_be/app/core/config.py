@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     OPENAI_API_KEY: str
 
+    # Kafka
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_GOAL_TOPIC: str = "goal_creation"
+
     class Config:
         env_file = ".env"
 

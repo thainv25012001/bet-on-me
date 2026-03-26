@@ -1,0 +1,220 @@
+import 'package:flutter/material.dart';
+import 'package:bet_on_me/core/theme/app_colors.dart';
+import 'package:bet_on_me/core/services/api_client.dart';
+import 'package:bet_on_me/features/auth/data/auth_service.dart';
+import 'package:bet_on_me/features/auth/presentation/widgets/auth_text_field.dart';
+
+class ChangePasswordScreen extends StatefulWidget {
+  const ChangePasswordScreen({super.key});
+
+  @override
+  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+}
+
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _currentController = TextEditingController();
+  final _newController = TextEditingController();
+  final _confirmController = TextEditingController();
+  final _authService = AuthService();
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _currentController.dispose();
+    _newController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    try {
+      await _authService.changePassword(
+        currentPassword: _currentController.text,
+        newPassword: _newController.text,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password changed successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Network error.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        backgroundColor: AppColors.bg,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Change Password',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 32),
+
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    AuthTextField(
+                      controller: _currentController,
+                      label: 'Current Password',
+                      prefixIcon: Icons.lock_outline,
+                      obscureText: _obscureCurrent,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureCurrent
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscureCurrent = !_obscureCurrent),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Enter your current password' : null,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    AuthTextField(
+                      controller: _newController,
+                      label: 'New Password',
+                      prefixIcon: Icons.lock_reset,
+                      obscureText: _obscureNew,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureNew
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscureNew = !_obscureNew),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Enter a new password';
+                        if (v.length < 8) return 'At least 8 characters';
+                        if (v == _currentController.text) {
+                          return 'New password must differ from current';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    AuthTextField(
+                      controller: _confirmController,
+                      label: 'Confirm New Password',
+                      prefixIcon: Icons.lock_outline,
+                      obscureText: _obscureConfirm,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirm
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Confirm your password';
+                        if (v != _newController.text) return 'Passwords do not match';
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 40),
+
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: Colors.black,
+                    disabledBackgroundColor: AppColors.gold.withAlpha(100),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.black,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : const Text(
+                          'Update Password',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

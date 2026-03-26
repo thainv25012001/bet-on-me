@@ -11,7 +11,7 @@ class GoalRepository(BaseRepository[Goal]):
 
     async def get_by_user(self, user_id: uuid.UUID, skip: int = 0, limit: int = 20) -> list[Goal]:
         result = await self.db.execute(
-            select(Goal).where(Goal.user_id == user_id).offset(skip).limit(limit)
+            select(Goal).where(Goal.user_id == user_id).order_by(Goal.created_at.desc()).offset(skip).limit(limit)
         )
         return list(result.scalars().all())
 

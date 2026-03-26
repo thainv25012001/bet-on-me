@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.task_repository import TaskRepository
 from app.repositories.plan_repository import PlanRepository
@@ -41,3 +42,10 @@ class TaskService:
             raise NotFound("Task")
         await self._check_plan_ownership(task.plan_id, user)
         return task
+
+    async def get_today_tasks(self, user: User) -> list[dict]:
+        return await self.repo.get_today_for_user(user.id, date.today())
+
+    async def update_task_status(self, task_id: uuid.UUID, user: User, status: str) -> Task:
+        task = await self.get_task(task_id, user)
+        return await self.repo.update(task, status=status)

@@ -20,5 +20,5 @@ class Goal(UUIDBase):
     status: Mapped[str] = mapped_column(Text, default="active", nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="goals")  # noqa: F821
-    plans: Mapped[list["Plan"]] = relationship("Plan", back_populates="goal")  # noqa: F821
-    stakes: Mapped[list["Stake"]] = relationship("Stake", back_populates="goal")  # noqa: F821
+    plans: Mapped[list["Plan"]] = relationship("Plan", back_populates="goal", cascade="all, delete-orphan")  # noqa: F821
+    stakes: Mapped[list["Stake"]] = relationship("Stake", back_populates="goal", cascade="all, delete-orphan")  # noqa: F821

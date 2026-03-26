@@ -6,7 +6,8 @@ alembic==1.13.3
 pydantic-settings==2.5.2
 pydantic[email]
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+bcrypt==4.2.0
 python-multipart==0.0.12
 psycopg2-binary==2.9.9
 openai==1.58.0
+aiokafka==0.11.0

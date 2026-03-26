@@ -44,6 +44,40 @@ class AuthService {
     await prefs.remove(_tokenKey);
   }
 
+  /// Requests a password-reset token for [email].
+  /// Returns the response data map (contains `reset_token` in dev mode).
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final response = await ApiClient.post(
+      '/api/v1/auth/forgot-password',
+      {'email': email},
+    );
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  /// Resets the password using a [token] from [forgotPassword].
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    await ApiClient.post(
+      '/api/v1/auth/reset-password',
+      {'token': token, 'new_password': newPassword},
+    );
+  }
+
+  /// Changes the password for the currently signed-in user.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final authToken = await getStoredToken();
+    await ApiClient.post(
+      '/api/v1/users/me/change-password',
+      {'current_password': currentPassword, 'new_password': newPassword},
+      token: authToken,
+    );
+  }
+
   Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);

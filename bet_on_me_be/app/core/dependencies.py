@@ -6,7 +6,7 @@ from app.db.session import get_db
 from app.core.security import decode_access_token
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
-from app.utils.exceptions import Unauthorized
+from app.utils.exceptions import Unauthorized, TokenExpired
 
 bearer_scheme = HTTPBearer()
 
@@ -16,9 +16,12 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     token = credentials.credentials
-    user_id = decode_access_token(token)
+    user_id, is_expired = decode_access_token(token)
+
+    if is_expired:
+        raise TokenExpired()
     if not user_id:
-        raise Unauthorized("Invalid or expired token")
+        raise Unauthorized("Invalid token")
 
     try:
         uid = uuid.UUID(user_id)

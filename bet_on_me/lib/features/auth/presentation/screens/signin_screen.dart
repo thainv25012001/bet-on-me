@@ -7,6 +7,7 @@ import 'package:bet_on_me/features/auth/presentation/widgets/auth_text_field.dar
 import 'package:bet_on_me/features/auth/presentation/widgets/or_divider.dart';
 import 'package:bet_on_me/features/auth/presentation/widgets/social_sign_in_button.dart';
 import 'package:bet_on_me/features/home/presentation/screens/home_screen.dart';
+import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -114,9 +115,12 @@ class _SignInScreenState extends State<SignInScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {
-                    // TODO: navigate to forgot password
-                  },
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ForgotPasswordScreen(),
+                    ),
+                  ),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.gold,
                     padding: const EdgeInsets.symmetric(vertical: 8),

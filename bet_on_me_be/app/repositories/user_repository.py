@@ -11,3 +11,9 @@ class UserRepository(BaseRepository[User]):
     async def get_by_email(self, email: str) -> User | None:
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
+
+    async def get_by_token(self, token: str) -> User | None:
+        result = await self.db.execute(
+            select(User).where(User.reset_token == token)
+        )
+        return result.scalar_one_or_none()

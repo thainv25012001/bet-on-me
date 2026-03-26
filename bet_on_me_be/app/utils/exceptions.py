@@ -35,6 +35,15 @@ class Unauthorized(AppException):
         )
 
 
+class TokenExpired(AppException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="TOKEN_EXPIRED",
+            message="Your session has expired. Please log in again.",
+        )
+
+
 class BadRequest(AppException):
     def __init__(self, message: str) -> None:
         super().__init__(
