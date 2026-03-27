@@ -84,13 +84,26 @@ class GoalService {
     return items.first as Map<String, dynamic>;
   }
 
-  Future<void> updateTaskStatus(String taskId, String status) async {
+  /// Returns `{task, day_complete, daily_reward: {id, amount}?}`.
+  Future<Map<String, dynamic>> updateTaskStatus(
+      String taskId, String status) async {
     final token = await _authService.getStoredToken();
-    await ApiClient.patch(
+    final response = await ApiClient.patch(
       '/api/v1/tasks/$taskId/status',
       {'status': status},
       token: token,
     );
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> claimDailyReward(String rewardId) async {
+    final token = await _authService.getStoredToken();
+    final response = await ApiClient.post(
+      '/api/v1/daily-rewards/$rewardId/claim',
+      {},
+      token: token,
+    );
+    return response['data'] as Map<String, dynamic>;
   }
 
   /// Returns commitment details for a locked goal.

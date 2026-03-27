@@ -138,13 +138,41 @@ class DailyTasksPageState extends State<DailyTasksPage> {
     final prev = task.status;
     setState(() => task.status = TaskStatus.success);
     try {
-      await _goalService.updateTaskStatus(task.id, TaskStatus.success);
+      final result =
+          await _goalService.updateTaskStatus(task.id, TaskStatus.success);
+      final dayComplete = result['day_complete'] as bool? ?? false;
+      final rewardMap = result['daily_reward'] as Map<String, dynamic>?;
+      if (dayComplete && rewardMap != null && mounted) {
+        _showDayCompleteSheet(
+          rewardId: rewardMap['id'] as String,
+          amount: (rewardMap['amount'] as num).toInt(),
+        );
+      }
     } catch (e) {
       setState(() => task.status = prev);
       if (mounted) {
         showErrorDialog(context, 'Could not update task. Please try again.');
       }
     }
+  }
+
+  void _showDayCompleteSheet({
+    required String rewardId,
+    required int amount,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppThemeColors.of(context).surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => _DayCompleteSheet(
+        rewardId: rewardId,
+        amount: amount,
+        goalService: _goalService,
+      ),
+    );
   }
 
   void _showTaskDetail(BuildContext context, _TaskItem task) {
@@ -617,6 +645,164 @@ class _EmptyState extends StatelessWidget {
               style: TextStyle(
                   color: c.textMuted, fontSize: 14, height: 1.5),
               textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Day complete / claim sheet ────────────────────────────────────────────────
+
+class _DayCompleteSheet extends StatefulWidget {
+  const _DayCompleteSheet({
+    required this.rewardId,
+    required this.amount,
+    required this.goalService,
+  });
+
+  final String rewardId;
+  final int amount;
+  final GoalService goalService;
+
+  @override
+  State<_DayCompleteSheet> createState() => _DayCompleteSheetState();
+}
+
+class _DayCompleteSheetState extends State<_DayCompleteSheet> {
+  bool _claiming = false;
+  bool _claimed = false;
+
+  Future<void> _claim() async {
+    setState(() => _claiming = true);
+    try {
+      await widget.goalService.claimDailyReward(widget.rewardId);
+      if (mounted) setState(() => _claimed = true);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _claiming = false);
+        showErrorDialog(context, 'Could not claim reward. Please try again.');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: c.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text('🎉', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 16),
+            Text(
+              'Day Complete!',
+              style: TextStyle(
+                color: c.text,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You finished all tasks for today.',
+              style: TextStyle(color: c.textMuted, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.goldDim,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.gold.withAlpha(120)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Your stake for today',
+                    style: TextStyle(color: c.textMuted, fontSize: 13),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '\$${widget.amount}',
+                    style: const TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'is yours to claim back',
+                    style: TextStyle(color: c.textMuted, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: _claimed
+                  ? FilledButton.icon(
+                      onPressed: () => Navigator.pop(context),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      icon: const Icon(Icons.check_circle_outline,
+                          color: Colors.white),
+                      label: const Text(
+                        'Claimed!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    )
+                  : FilledButton(
+                      onPressed: _claiming ? null : _claim,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _claiming
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Claim \$${widget.amount} back',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                    ),
             ),
           ],
         ),

@@ -38,6 +38,17 @@ class TaskOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DailyRewardInfo(BaseModel):
+    id: uuid.UUID
+    amount: int
+
+
+class TaskStatusUpdateOut(BaseModel):
+    task: TaskOut
+    day_complete: bool
+    daily_reward: DailyRewardInfo | None = None
+
+
 class TaskTodayOut(BaseModel):
     id: uuid.UUID
     title: str | None

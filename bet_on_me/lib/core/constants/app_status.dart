@@ -27,3 +27,8 @@ class PlanMode {
   static const String duration = 'duration';
   static const String hours = 'hours';
 }
+
+class DailyRewardStatus {
+  static const String pending = 'pending';
+  static const String claimed = 'claimed';
+}

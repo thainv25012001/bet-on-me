@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.task import TaskCreate, TaskOut, TaskStatusUpdate, TaskTodayOut
+from app.schemas.task import TaskCreate, TaskOut, TaskStatusUpdate, TaskTodayOut, TaskStatusUpdateOut
 from app.schemas.common import success_response, paginated_response
 from app.services.task_service import TaskService
 
@@ -65,5 +65,5 @@ async def update_task_status(
     db: AsyncSession = Depends(get_db),
 ):
     service = TaskService(db)
-    task = await service.update_task_status(task_id, current_user, data.status)
-    return success_response(TaskOut.model_validate(task))
+    result = await service.update_task_status(task_id, current_user, data.status)
+    return success_response(result.model_dump())

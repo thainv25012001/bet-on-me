@@ -36,6 +36,11 @@ class StakeStatus:
     ACTIVE = "active"
 
 
+class DailyRewardStatus:
+    PENDING = "pending"
+    CLAIMED = "claimed"
+
+
 class PlanGeneratedBy:
     AI = "ai"
 
