@@ -1,24 +1,24 @@
 import uuid
 from datetime import date, datetime
 from typing import Literal
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 from app.schemas.plan import PlanOut
 
 
 class GoalCreate(BaseModel):
+    """Basic goal info saved immediately when the user submits the form."""
     title: str
     description: str | None = None
     start_date: date
+    # None when mode='hours' — consumer updates it after AI estimates duration.
     target_date: date | None = None
     stake_per_day: int
+
+
+class GoalGenerateRequest(BaseModel):
+    """AI generation parameters sent after the goal record is created."""
     hours_per_day: float
     mode: Literal["duration", "hours"] = "duration"
-
-    @model_validator(mode="after")
-    def validate_target_date_for_mode(self) -> "GoalCreate":
-        if self.mode == "duration" and self.target_date is None:
-            raise ValueError("target_date is required when mode is 'duration'")
-        return self
 
 
 class GoalUpdate(BaseModel):

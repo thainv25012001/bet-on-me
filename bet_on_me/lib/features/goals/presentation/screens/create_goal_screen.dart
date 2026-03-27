@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:bet_on_me/core/errors/app_error_messages.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
+
+enum _PlanMode { deadline, freeTime }
 
 class CreateGoalScreen extends StatefulWidget {
   const CreateGoalScreen({super.key});
@@ -18,6 +21,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   final _hoursController = TextEditingController();
   final _goalService = GoalService();
 
+  _PlanMode _mode = _PlanMode.deadline;
   DateTime _startDate = DateTime.now();
   String? _startDateError;
   DateTime? _targetDate;
@@ -57,7 +61,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     if (picked != null) setState(() => _startDate = picked);
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickTargetDate() async {
     final c = AppThemeColors.of(context);
     final picked = await showDatePicker(
       context: context,
@@ -110,34 +114,51 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   // ── Submit ────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
+    // Validate dates.
     setState(() {
-      _startDateError =
-          (_targetDate != null && !_startDate.isBefore(_targetDate!))
-              ? 'Start date must be before target date'
-              : null;
-      _dateError = _targetDate == null ? 'Please pick a target date' : null;
+      _startDateError = null;
+      _dateError = null;
     });
-    if (_targetDate == null || _startDateError != null) return;
+
+    if (_mode == _PlanMode.deadline) {
+      if (_targetDate == null) {
+        setState(() => _dateError = 'Please pick a target date');
+        return;
+      }
+      if (!_startDate.isBefore(_targetDate!)) {
+        setState(() => _startDateError = 'Start date must be before target date');
+        return;
+      }
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     try {
-      final result = await _goalService.createGoal(
+      // Step 1: save basic goal info immediately.
+      final goal = await _goalService.createGoal(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim().isEmpty
             ? null
             : _descriptionController.text.trim(),
         startDate: _startDate,
-        targetDate: _targetDate!,
+        targetDate: _mode == _PlanMode.deadline ? _targetDate : null,
         stakePerDay: int.parse(_stakeController.text),
+      );
+
+      // Step 2: enqueue AI plan generation.
+      final goalId = goal['id'] as String;
+      final job = await _goalService.generateGoal(
+        goalId,
         hoursPerDay: double.parse(_hoursController.text),
+        mode: _mode == _PlanMode.deadline ? 'duration' : 'hours',
       );
 
       if (!mounted) return;
 
-      // Pop back to home immediately, passing job info so home can poll.
       Navigator.pop(context, {
-        ...result,
+        ...job,
+        'goal_id': goalId,
         'title': _titleController.text.trim(),
       });
     } catch (e) {
@@ -145,7 +166,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString()),
+          content: Text(AppErrorMessages.fromException(e)),
           backgroundColor: AppColors.error,
         ),
       );
@@ -182,6 +203,25 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
               children: [
                 const SizedBox(height: 8),
 
+                // ── Mode selector ─────────────────────────────────────────
+                _ModeToggle(
+                  c: c,
+                  selected: _mode,
+                  enabled: !_isLoading,
+                  onChanged: (m) => setState(() {
+                    _mode = m;
+                    _dateError = null;
+                    _startDateError = null;
+                  }),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Mode description ──────────────────────────────────────
+                _ModeHint(c: c, mode: _mode),
+
+                const SizedBox(height: 24),
+
                 // ── Title ────────────────────────────────────────────────
                 _label(c, 'What is your goal?'),
                 const SizedBox(height: 8),
@@ -215,71 +255,32 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                   c: c,
                   label:
                       '${_startDate.day}/${_startDate.month}/${_startDate.year}',
-                  onTap: _pickStartDate,
+                  onTap: _isLoading ? null : _pickStartDate,
                 ),
-                if (_startDateError != null)
-                  _ErrorHint(_startDateError!),
+                if (_startDateError != null) _ErrorHint(_startDateError!),
+
+                // ── Target date (deadline mode only) ─────────────────────
+                if (_mode == _PlanMode.deadline) ...[
+                  const SizedBox(height: 24),
+                  _label(c, 'Target date'),
+                  const SizedBox(height: 8),
+                  _DatePickerRow(
+                    c: c,
+                    label: _targetDate == null
+                        ? 'Pick a date'
+                        : '${_targetDate!.day}/${_targetDate!.month}/${_targetDate!.year}',
+                    placeholder: _targetDate == null,
+                    onTap: _isLoading ? null : _pickTargetDate,
+                    onClear: _targetDate != null && !_isLoading
+                        ? () => setState(() => _targetDate = null)
+                        : null,
+                  ),
+                  if (_dateError != null) _ErrorHint(_dateError!),
+                ],
 
                 const SizedBox(height: 24),
 
-                // ── Target date ──────────────────────────────────────────
-                _label(c, 'Target date'),
-                const SizedBox(height: 8),
-                _DatePickerRow(
-                  c: c,
-                  label: _targetDate == null
-                      ? 'Pick a date'
-                      : '${_targetDate!.day}/${_targetDate!.month}/${_targetDate!.year}',
-                  placeholder: _targetDate == null,
-                  onTap: _pickDate,
-                  onClear: _targetDate != null
-                      ? () => setState(() => _targetDate = null)
-                      : null,
-                ),
-                if (_dateError != null) _ErrorHint(_dateError!),
-
-                const SizedBox(height: 24),
-
-                // ── Stake per day ────────────────────────────────────────
-                Row(
-                  children: [
-                    Text(
-                      'Daily stake (\$)',
-                      style: TextStyle(
-                          color: c.text,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Icon(Icons.info_outline,
-                          color: c.textMuted, size: 18),
-                      onPressed: _showStakeInfo,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _field(
-                  c: c,
-                  controller: _stakeController,
-                  hint: 'e.g. 5',
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'Daily stake is required';
-                    }
-                    final n = int.tryParse(v);
-                    if (n == null || n <= 0) return 'Enter a positive amount';
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Hours per day ────────────────────────────────────────
+                // ── Hours per day ─────────────────────────────────────────
                 _label(c, 'Hours per day'),
                 const SizedBox(height: 8),
                 _field(
@@ -298,6 +299,45 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                     final n = double.tryParse(v);
                     if (n == null || n <= 0) return 'Enter a positive number';
                     if (n > 24) return 'Cannot exceed 24 hours';
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Stake per day ─────────────────────────────────────────
+                Row(
+                  children: [
+                    Text(
+                      'Daily stake (\$)',
+                      style: TextStyle(
+                          color: c.text,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.info_outline,
+                          color: c.textMuted, size: 18),
+                      onPressed: _isLoading ? null : _showStakeInfo,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _field(
+                  c: c,
+                  controller: _stakeController,
+                  hint: 'e.g. 5',
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (v) {
+                    if (v == null || v.isEmpty) {
+                      return 'Daily stake is required';
+                    }
+                    final n = int.tryParse(v);
+                    if (n == null || n <= 0) return 'Enter a positive amount';
                     return null;
                   },
                 ),
@@ -411,6 +451,157 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   }
 }
 
+// ── Mode toggle ───────────────────────────────────────────────────────────────
+
+class _ModeToggle extends StatelessWidget {
+  const _ModeToggle({
+    required this.c,
+    required this.selected,
+    required this.onChanged,
+    required this.enabled,
+  });
+
+  final AppThemeColors c;
+  final _PlanMode selected;
+  final ValueChanged<_PlanMode> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.border),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          _ModeTab(
+            c: c,
+            icon: Icons.flag_outlined,
+            label: 'I have a deadline',
+            active: selected == _PlanMode.deadline,
+            enabled: enabled,
+            onTap: () => onChanged(_PlanMode.deadline),
+          ),
+          _ModeTab(
+            c: c,
+            icon: Icons.schedule_outlined,
+            label: 'I have free time',
+            active: selected == _PlanMode.freeTime,
+            enabled: enabled,
+            onTap: () => onChanged(_PlanMode.freeTime),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
+    required this.c,
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final AppThemeColors c;
+  final IconData icon;
+  final String label;
+  final bool active;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: active ? AppColors.gold : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: active ? Colors.black : c.textMuted,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                        active ? FontWeight.w700 : FontWeight.w500,
+                    color: active ? Colors.black : c.textMuted,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Mode hint ─────────────────────────────────────────────────────────────────
+
+class _ModeHint extends StatelessWidget {
+  const _ModeHint({required this.c, required this.mode});
+
+  final AppThemeColors c;
+  final _PlanMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDeadline = mode == _PlanMode.deadline;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gold.withAlpha(60)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isDeadline ? Icons.flag_outlined : Icons.auto_awesome_outlined,
+            color: AppColors.gold,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              isDeadline
+                  ? 'You pick a finish date. AI builds a daily plan that fits your schedule and gets you there on time.'
+                  : 'You set how many hours you can spare each day. AI estimates how long it will take and plans every day for you.',
+              style: TextStyle(
+                color: c.text,
+                fontSize: 13,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Date picker row ───────────────────────────────────────────────────────────
 
 class _DatePickerRow extends StatelessWidget {
@@ -425,7 +616,7 @@ class _DatePickerRow extends StatelessWidget {
   final AppThemeColors c;
   final String label;
   final bool placeholder;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final VoidCallback? onClear;
 
   @override

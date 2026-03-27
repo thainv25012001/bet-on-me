@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:bet_on_me/core/errors/app_error_messages.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 import 'package:bet_on_me/features/auth/data/auth_service.dart';
 import 'package:bet_on_me/features/auth/presentation/screens/change_password_screen.dart';
@@ -143,9 +144,9 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       _loadGoals();
     } else {
+      final errorCode = payload['error_code'] as String?;
       setState(() {
-        _pendingJobError =
-            payload['error_message'] as String? ?? 'Goal creation failed.';
+        _pendingJobError = AppErrorMessages.fromCode(errorCode);
       });
     }
   }
@@ -164,10 +165,10 @@ class _HomeScreenState extends State<HomeScreen> {
         await _loadGoals();
       } else if (jobStatus == 'failed') {
         _elapsedTimer?.cancel();
+        final errorCode = status['error_code'] as String?;
         setState(() {
           _pendingElapsed = status['elapsed_seconds'] as int? ?? _pendingElapsed;
-          _pendingJobError =
-              status['error_message'] as String? ?? 'Goal creation failed.';
+          _pendingJobError = AppErrorMessages.fromCode(errorCode);
         });
       }
       // If still pending, leave the card showing — user can dismiss manually.

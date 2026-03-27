@@ -1,17 +1,14 @@
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm.attributes import set_committed_value
 from app.repositories.goal_repository import GoalRepository
 from app.repositories.subscription_repository import SubscriptionRepository
-from app.schemas.goal import GoalCreate, GoalUpdate
+from app.schemas.goal import GoalCreate, GoalGenerateRequest, GoalUpdate
 from app.models.goal import Goal
 from app.models.goal_job import GoalJob
-from app.models.plan import Plan
-from app.models.task import Task
 from app.models.user import User
 from app.core.config import settings
 from app.services.subscription_service import SubscriptionService
@@ -28,78 +25,22 @@ class GoalService:
         total = await self.repo.count_by_user(user.id)
         return items, total
 
-    async def create_goal(self, user: User, data: GoalCreate) -> Goal:
+    async def create_goal_draft(self, user: User, data: GoalCreate) -> Goal:
+        """Persist basic goal info immediately. Plan/tasks are generated async."""
         db = self.repo.db
-
-        # 1. Determine subscription tier cap
-        active_sub = await SubscriptionRepository(db).get_active_by_user(user.id)
-        max_days = SubscriptionService.get_max_days_for_subscription(active_sub)
-
-        # 2. Call OpenAI before touching the DB so the connection isn't held
-        #    open during a potentially slow HTTP round-trip.
-        duration = (data.target_date - data.start_date).days if data.mode == "duration" else None
-        result = await _generate_tasks(
-            goal_title=data.title,
-            hours_per_day=data.hours_per_day,
-            mode=data.mode,
-            duration=duration,
-            max_days=max_days,
+        goal = Goal(
+            user_id=user.id,
+            title=data.title,
+            description=data.description,
+            start_date=data.start_date,
+            # Placeholder when hours mode — consumer updates after AI estimates real duration.
+            target_date=data.target_date or data.start_date,
+            stake_per_day=data.stake_per_day,
         )
-        tasks_data = result["tasks"]
-        overview = result.get("overview")
-        total_days = result["total_days"]   # real full goal duration (uncapped)
-        # target_date reflects the full goal, not the subscription cap
-        real_target_date = data.target_date if data.mode == "duration" else data.start_date + timedelta(days=total_days)
-
-        try:
-            # 3. Create goal row
-            goal = Goal(
-                user_id=user.id,
-                title=data.title,
-                description=data.description,
-                start_date=data.start_date,
-                target_date=real_target_date,
-                stake_per_day=data.stake_per_day,
-            )
-            db.add(goal)
-            await db.flush()  # assigns goal.id
-
-            # 4. Create plan row — total_days is the full goal duration; tasks only cover the subscribed tier window
-            plan = Plan(goal_id=goal.id, total_days=total_days, generated_by="ai", overview=overview, hours_per_day=data.hours_per_day)
-            db.add(plan)
-            await db.flush()  # assigns plan.id
-
-            # 5. Create task rows
-            tasks = [
-                Task(
-                    plan_id=plan.id,
-                    day_number=item["day_number"],
-                    execution_date=data.start_date + timedelta(days=item["day_number"] - 1),
-                    title=item["title"],
-                    description=item.get("description"),
-                    explanation=item.get("explanation"),
-                    guide=item.get("guide"),
-                    estimated_minutes=item.get("estimated_minutes"),
-                )
-                for item in tasks_data
-            ]
-            for task in tasks:
-                db.add(task)
-
-            # 6. Single commit
-            await db.commit()
-
-            # 7. Refresh goal; plan/tasks have Python-side defaults, no refresh needed
-            await db.refresh(goal)
-
-            # Attach for GoalWithPlanOut serialisation
-            set_committed_value(plan, "tasks", tasks)
-            goal.plan = plan
-            return goal
-
-        except Exception:
-            await db.rollback()
-            raise
+        db.add(goal)
+        await db.commit()
+        await db.refresh(goal)
+        return goal
 
     async def get_goal(self, goal_id: uuid.UUID, user: User) -> Goal:
         goal = await self.repo.get(goal_id)
@@ -117,29 +58,37 @@ class GoalService:
         goal = await self.get_goal(goal_id, user)
         await self.repo.delete(goal)
 
-    async def enqueue_goal_job(self, user: User, data: GoalCreate) -> dict:
-        """Create a GoalJob record and publish it to Kafka. Returns immediately."""
-        # Lazy import to avoid circular dependency with kafka module.
+    async def enqueue_goal_job(
+        self, user: User, goal_id: uuid.UUID, data: GoalGenerateRequest
+    ) -> dict:
+        """Create a GoalJob linked to an existing goal and publish to Kafka."""
         from app.kafka.producer import send_goal_job
 
+        db = self.repo.db
+
+        # Verify goal exists and belongs to this user.
+        goal = await self.repo.get(goal_id)
+        if not goal:
+            raise NotFound("Goal")
+        if str(goal.user_id) != str(user.id):
+            raise Forbidden()
+
         if data.mode == "duration":
-            total_days = (data.target_date - data.start_date).days
+            total_days = (goal.target_date - goal.start_date).days
         else:
-            # Mode B: use the tier cap as the upper bound for time estimation
-            active_sub = await SubscriptionRepository(self.repo.db).get_active_by_user(user.id)
+            active_sub = await SubscriptionRepository(db).get_active_by_user(user.id)
             total_days = SubscriptionService.get_max_days_for_subscription(active_sub)
 
         # Formula: max(5, 5 + int(total_days * 0.15))
-        # 30d→9s  60d→14s  90d→18s  180d→32s  365d→59s
         estimated_seconds = max(5, 5 + int(total_days * 0.15))
 
-        payload = data.model_dump(mode="json")   # dates serialised as strings
+        payload = data.model_dump(mode="json")
         job = GoalJob(
             user_id=user.id,
+            goal_id=goal_id,   # pre-set — goal already exists
             payload=payload,
             estimated_seconds=estimated_seconds,
         )
-        db = self.repo.db
         db.add(job)
         await db.commit()
         await db.refresh(job)

@@ -7,29 +7,46 @@ class GoalService {
   String _formatDate(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  /// Enqueues a new goal-creation job.
-  /// Returns `{job_id: String, estimated_seconds: int}`.
+  /// Creates the goal record with basic info.
+  /// Returns the saved `GoalOut` map including `id`.
+  /// Creates the goal record with basic info.
+  /// [targetDate] is null for hours mode — the backend uses start_date as a
+  /// placeholder and updates it after AI estimates the real duration.
   Future<Map<String, dynamic>> createGoal({
     required String title,
     String? description,
     required DateTime startDate,
-    required DateTime targetDate,
+    DateTime? targetDate,
     required int stakePerDay,
-    required double hoursPerDay,
   }) async {
     final token = await _authService.getStoredToken();
     final body = <String, dynamic>{
       'title': title,
       'start_date': _formatDate(startDate),
-      'target_date': _formatDate(targetDate),
       'stake_per_day': stakePerDay,
-      'hours_per_day': hoursPerDay,
     };
+    if (targetDate != null) body['target_date'] = _formatDate(targetDate);
     if (description != null && description.isNotEmpty) {
       body['description'] = description;
     }
     final response =
         await ApiClient.post('/api/v1/goals', body, token: token);
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  /// Enqueues AI plan generation for an existing goal.
+  /// Returns `{job_id: String, estimated_seconds: int}`.
+  Future<Map<String, dynamic>> generateGoal(
+    String goalId, {
+    required double hoursPerDay,
+    String mode = 'duration',
+  }) async {
+    final token = await _authService.getStoredToken();
+    final response = await ApiClient.post(
+      '/api/v1/goals/$goalId/generate',
+      {'hours_per_day': hoursPerDay, 'mode': mode},
+      token: token,
+    );
     return response['data'] as Map<String, dynamic>;
   }
 

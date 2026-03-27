@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from aiokafka import AIOKafkaConsumer
+from openai import APIError as OpenAIAPIError, RateLimitError as OpenAIRateLimitError
 from sqlalchemy import select
 
 from app.core.config import settings
@@ -15,9 +16,10 @@ from app.models.goal import Goal
 from app.models.plan import Plan
 from app.models.task import Task
 from app.repositories.subscription_repository import SubscriptionRepository
-from app.schemas.goal import GoalCreate
+from app.schemas.goal import GoalGenerateRequest
 from app.services.goal_service import _generate_tasks
 from app.services.subscription_service import SubscriptionService
+from app.utils import error_codes as ec
 
 logger = logging.getLogger(__name__)
 
@@ -77,53 +79,68 @@ async def _process_message(msg) -> None:
 
     # ── Phase 2: call OpenAI (no DB session held during network I/O) ─────────
     try:
-        goal_data = GoalCreate(**payload)
+        gen_data = GoalGenerateRequest(**payload)
 
-        async with AsyncSessionLocal() as db_sub:
-            active_sub = await SubscriptionRepository(db_sub).get_active_by_user(user_id)
+        # Load goal context (title, dates) and subscription cap.
+        async with AsyncSessionLocal() as db_ctx:
+            job_ctx = await db_ctx.get(GoalJob, job_uuid)
+            goal_ctx = await db_ctx.get(Goal, job_ctx.goal_id)
+            active_sub = await SubscriptionRepository(db_ctx).get_active_by_user(user_id)
             max_days = SubscriptionService.get_max_days_for_subscription(active_sub)
+            goal_title = goal_ctx.title
+            goal_start_date = goal_ctx.start_date
+            goal_target_date = goal_ctx.target_date
 
-        duration = (goal_data.target_date - goal_data.start_date).days if goal_data.mode == "duration" else None
+        duration = (
+            (goal_target_date - goal_start_date).days
+            if gen_data.mode == "duration"
+            else None
+        )
         result = await _generate_tasks(
-            goal_title=goal_data.title,
-            hours_per_day=goal_data.hours_per_day,
-            mode=goal_data.mode,
+            goal_title=goal_title,
+            hours_per_day=gen_data.hours_per_day,
+            mode=gen_data.mode,
             duration=duration,
             max_days=max_days,
         )
-        total_days = result["total_days"]   # real full goal duration (uncapped)
-        # target_date reflects the full goal duration, not the subscription cap
+        total_days = result["total_days"]
         real_target_date = (
-            goal_data.target_date if goal_data.mode == "duration"
-            else goal_data.start_date + timedelta(days=total_days)
+            goal_target_date if gen_data.mode == "duration"
+            else goal_start_date + timedelta(days=total_days)
         )
+    except OpenAIRateLimitError:
+        logger.warning("OpenAI rate limit hit for job %s", job_id_str)
+        await _mark_failed(job_uuid, "OpenAI rate limit exceeded", ec.AI_SERVICE_ERROR.code)
+        return
+    except OpenAIAPIError as e:
+        logger.exception("OpenAI API error for job %s: %s", job_id_str, e)
+        await _mark_failed(job_uuid, f"OpenAI API error: {e}", ec.AI_SERVICE_ERROR.code)
+        return
+    except ValueError as e:
+        logger.exception("AI response invalid for job %s: %s", job_id_str, e)
+        await _mark_failed(job_uuid, str(e), ec.AI_RESPONSE_INVALID.code)
+        return
     except Exception as e:
-        logger.exception("OpenAI call failed for job %s", job_id_str)
-        await _mark_failed(job_uuid, str(e))
+        logger.exception("Unexpected error in Phase 2 for job %s", job_id_str)
+        await _mark_failed(job_uuid, str(e), ec.PLAN_GENERATION_FAILED.code)
         return
 
-    # ── Phase 3: persist goal + plan + tasks ─────────────────────────────────
+    # ── Phase 3: persist plan + tasks (goal already exists) ──────────────────
     try:
         async with AsyncSessionLocal() as db:
             job = await db.get(GoalJob, job_uuid)
+            goal = await db.get(Goal, job.goal_id)
 
-            goal = Goal(
-                user_id=user_id,
-                title=goal_data.title,
-                description=goal_data.description,
-                start_date=goal_data.start_date,
-                target_date=real_target_date,
-                stake_per_day=goal_data.stake_per_day,
-            )
-            db.add(goal)
-            await db.flush()
+            # Update target_date when AI determined real duration (hours mode).
+            if gen_data.mode == "hours":
+                goal.target_date = real_target_date
 
             plan = Plan(
                 goal_id=goal.id,
                 total_days=total_days,
                 generated_by="ai",
                 overview=result.get("overview"),
-                hours_per_day=goal_data.hours_per_day,
+                hours_per_day=gen_data.hours_per_day,
             )
             db.add(plan)
             await db.flush()
@@ -133,7 +150,7 @@ async def _process_message(msg) -> None:
                     plan_id=plan.id,
                     day_number=item["day_number"],
                     execution_date=(
-                        goal_data.start_date + timedelta(days=item["day_number"] - 1)
+                        goal_start_date + timedelta(days=item["day_number"] - 1)
                     ),
                     title=item["title"],
                     description=item.get("description"),
@@ -143,11 +160,10 @@ async def _process_message(msg) -> None:
                 ))
 
             job.status = "success"
-            job.goal_id = goal.id
             job.completed_at = datetime.utcnow()
             await db.commit()
 
-        logger.info("Job %s completed — goal %s created", job_id_str, goal.id)
+        logger.info("Job %s completed — plan created for goal %s", job_id_str, goal.id)
         await ws_manager.notify(job_id_str, {
             "status": "success",
             "job_id": job_id_str,
@@ -156,10 +172,14 @@ async def _process_message(msg) -> None:
 
     except Exception as e:
         logger.exception("DB write failed for job %s", job_id_str)
-        await _mark_failed(job_uuid, str(e))
+        await _mark_failed(job_uuid, str(e), ec.PLAN_GENERATION_FAILED.code)
 
 
-async def _mark_failed(job_uuid: uuid.UUID, error: str) -> None:
+async def _mark_failed(
+    job_uuid: uuid.UUID,
+    error: str,
+    error_code: str = ec.INTERNAL_SERVER_ERROR.code,
+) -> None:
     try:
         async with AsyncSessionLocal() as db:
             result = await db.execute(
@@ -168,13 +188,13 @@ async def _mark_failed(job_uuid: uuid.UUID, error: str) -> None:
             job = result.scalar_one_or_none()
             if job:
                 job.status = "failed"
-                job.error_message = error[:1000]
+                job.error_message = error[:1000]   # raw message stored for ops, never shown to users
                 job.completed_at = datetime.utcnow()
                 await db.commit()
                 await ws_manager.notify(str(job_uuid), {
                     "status": "failed",
                     "job_id": str(job_uuid),
-                    "error_message": job.error_message,
+                    "error_code": error_code,  # safe code — Flutter maps this to a user-friendly message
                 })
     except Exception:
         logger.exception("Could not mark job %s as failed", job_uuid)

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.goal import GoalCreate, GoalUpdate, GoalOut
+from app.schemas.goal import GoalCreate, GoalGenerateRequest, GoalUpdate, GoalOut
 from app.schemas.common import success_response, paginated_response
 from app.services.goal_service import GoalService
 
@@ -23,15 +23,28 @@ async def list_goals(
     return paginated_response([GoalOut.model_validate(g) for g in items], total, page, page_size)
 
 
-@router.post("", status_code=202)
+@router.post("", status_code=201)
 async def create_goal(
     data: GoalCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Enqueue a goal-creation job. Returns job_id and estimated wait time."""
+    """Save basic goal info. Call /{goal_id}/generate next to start AI planning."""
     service = GoalService(db)
-    result = await service.enqueue_goal_job(current_user, data)
+    goal = await service.create_goal_draft(current_user, data)
+    return success_response(GoalOut.model_validate(goal))
+
+
+@router.post("/{goal_id}/generate", status_code=202)
+async def generate_goal_plan(
+    goal_id: uuid.UUID,
+    data: GoalGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Enqueue AI task-generation for an existing goal. Returns job_id and estimated wait time."""
+    service = GoalService(db)
+    result = await service.enqueue_goal_job(current_user, goal_id, data)
     return success_response(result)
 
 
