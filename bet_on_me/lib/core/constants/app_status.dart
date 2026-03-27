@@ -10,6 +10,8 @@ class TaskStatus {
 }
 
 class GoalStatus {
+  static const String draft = 'draft';
+  static const String locked = 'locked';
   static const String inProgress = 'in_progress';
   static const String success = 'success';
   static const String failed = 'failed';

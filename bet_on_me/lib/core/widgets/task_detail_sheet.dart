@@ -31,7 +31,7 @@ class TaskDetailSheet extends StatelessWidget {
     final rawGuide = task['guide'] as List<dynamic>? ?? [];
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
+      initialChildSize: 0.75,
       minChildSize: 0.4,
       maxChildSize: 0.92,
       expand: false,

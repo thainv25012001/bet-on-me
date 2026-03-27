@@ -70,10 +70,10 @@ class DailyTasksPage extends StatefulWidget {
   const DailyTasksPage({super.key});
 
   @override
-  State<DailyTasksPage> createState() => _DailyTasksPageState();
+  State<DailyTasksPage> createState() => DailyTasksPageState();
 }
 
-class _DailyTasksPageState extends State<DailyTasksPage> {
+class DailyTasksPageState extends State<DailyTasksPage> {
   final _goalService = GoalService();
 
   List<_GoalDay> _goalDays = [];
@@ -85,6 +85,8 @@ class _DailyTasksPageState extends State<DailyTasksPage> {
     super.initState();
     _load();
   }
+
+  void reload() => _load();
 
   Future<void> _load() async {
     setState(() {

@@ -26,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final _dailyTasksKey = GlobalKey<DailyTasksPageState>();
   final _authService = AuthService();
   final _goalService = GoalService();
   final _wsService = GoalWsService();
@@ -102,6 +103,35 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _retryFailedJob() async {
+    if (_pendingJob == null) return;
+    final goalId = _pendingJob!['goal_id'] as String? ?? '';
+    final hoursPerDay =
+        (_pendingJob!['hours_per_day'] as num?)?.toDouble() ?? 1.0;
+    final mode = _pendingJob!['mode'] as String? ?? 'duration';
+    final title = _pendingJob!['title'] as String? ?? 'Goal';
+
+    setState(() => _pendingJobError = null);
+    try {
+      final job = await _goalService.generateGoal(
+        goalId,
+        hoursPerDay: hoursPerDay,
+        mode: mode,
+      );
+      if (!mounted) return;
+      _startJobWatch({
+        ...job,
+        'goal_id': goalId,
+        'title': title,
+        'hours_per_day': hoursPerDay,
+        'mode': mode,
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _pendingJobError = 'Could not retry. Please try again.');
+    }
+  }
+
   Future<void> _startJobWatch(Map<String, dynamic> job) async {
     final jobId = job['job_id'] as String? ?? '';
     setState(() {
@@ -139,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final status = payload['status'] as String? ?? '';
     if (status == JobStatus.success) {
+      // Plan is ready — goal is now locked, awaiting user commitment.
       setState(() {
         _pendingJob = null;
         _pendingJobError = null;
@@ -180,19 +211,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final id = goal['id'] as String? ?? '';
     final title = goal['title'] as String? ?? 'Untitled';
     final startDate = goal['start_date'] as String?;
-    final deleted = await Navigator.push<bool>(
+    final goalStatus = goal['status'] as String?;
+    final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(
         builder: (_) => GoalDetailScreen(
           goalId: id,
           goalTitle: title,
           startDate: startDate,
+          goalStatus: goalStatus,
         ),
       ),
     );
-    if (deleted == true) {
+    if (result == 'deleted' || result == 'unlocked') {
       setState(() => _goalsLoading = true);
       await _loadGoals();
+      _dailyTasksKey.currentState?.reload();
     }
   }
 
@@ -216,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _selectedIndex,
         children: [
           _buildDashboard(c),
-          const DailyTasksPage(),
+          DailyTasksPage(key: _dailyTasksKey),
           const SubscriptionScreen(),
         ],
       ),
@@ -507,7 +541,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _pendingJobError = null;
                       }),
                       onRetry: _pendingJobError != null
-                          ? _openCreateGoal
+                          ? _retryFailedJob
                           : null,
                     ),
                   ),
@@ -1077,8 +1111,14 @@ class _GoalListItem extends StatelessWidget {
     }
 
     final isCompleted = status == GoalStatus.success;
-    final statusColor =
-        isCompleted ? AppColors.success : AppColors.gold;
+    final isLocked = status == GoalStatus.locked;
+    final isDraft = status == GoalStatus.draft;
+    final isFailed = status == GoalStatus.failed;
+    final statusColor = isCompleted
+        ? AppColors.success
+        : isFailed
+            ? AppColors.error
+            : AppColors.gold;
 
     return GestureDetector(
       onTap: onTap,
@@ -1118,21 +1158,28 @@ class _GoalListItem extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 if (isCompleted)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.successDim,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'Done',
-                      style: TextStyle(
-                        color: AppColors.success,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  _StatusBadge(
+                    label: 'Done',
+                    color: AppColors.success,
+                    bgColor: AppColors.successDim,
+                  )
+                else if (isFailed)
+                  _StatusBadge(
+                    label: 'Failed',
+                    color: AppColors.error,
+                    bgColor: AppColors.error.withAlpha(30),
+                  )
+                else if (isLocked)
+                  _StatusBadge(
+                    label: 'Locked',
+                    color: AppColors.gold,
+                    bgColor: AppColors.goldDim,
+                  )
+                else if (isDraft)
+                  _StatusBadge(
+                    label: 'Generating…',
+                    color: c.textMuted,
+                    bgColor: c.border,
                   )
                 else if (totalDays > 0)
                   Text(
@@ -1164,6 +1211,39 @@ class _GoalListItem extends StatelessWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status Badge ─────────────────────────────────────────────────────────────
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.label,
+    required this.color,
+    required this.bgColor,
+  });
+
+  final String label;
+  final Color color;
+  final Color bgColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

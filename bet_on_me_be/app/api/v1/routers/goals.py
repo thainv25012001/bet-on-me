@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.goal import GoalCreate, GoalGenerateRequest, GoalUpdate, GoalOut
+from app.schemas.goal import CommitmentOut, GoalCreate, GoalGenerateRequest, GoalUpdate, GoalOut
 from app.schemas.common import success_response, paginated_response
 from app.services.goal_service import GoalService
 
@@ -60,6 +60,30 @@ async def get_goal_job(
     service = GoalService(db)
     result = await service.get_job_status(job_id, current_user)
     return success_response(result)
+
+
+@router.get("/{goal_id}/commitment")
+async def get_goal_commitment(
+    goal_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return commitment amount for a locked goal awaiting user confirmation."""
+    service = GoalService(db)
+    data = await service.get_commitment(goal_id, current_user)
+    return success_response(data.model_dump())
+
+
+@router.post("/{goal_id}/unlock")
+async def unlock_goal(
+    goal_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Confirm financial commitment and move goal to in_progress."""
+    service = GoalService(db)
+    goal = await service.unlock_goal(goal_id, current_user)
+    return success_response(GoalOut.model_validate(goal))
 
 
 @router.get("/{goal_id}")

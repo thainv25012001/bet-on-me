@@ -8,15 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.goal_repository import GoalRepository
 from app.repositories.subscription_repository import SubscriptionRepository
 from app.repositories.task_repository import TaskRepository
-from app.schemas.goal import GoalCreate, GoalGenerateRequest, GoalUpdate
+from app.schemas.goal import CommitmentOut, GoalCreate, GoalGenerateRequest, GoalUpdate
 from app.models.goal import Goal
 from app.models.goal_job import GoalJob
 from app.models.plan import Plan
+from app.models.stake import Stake
 from app.models.user import User
 from app.core.config import settings
 from app.services.subscription_service import SubscriptionService
-from app.utils.constants import GoalStatus, GoalMode
-from app.utils.exceptions import NotFound, Forbidden, GoalLimitReached
+from app.utils.constants import GoalStatus, GoalMode, StakeStatus
+from app.utils.exceptions import BadRequest, NotFound, Forbidden, GoalLimitReached
 
 
 class GoalService:
@@ -36,7 +37,7 @@ class GoalService:
         # Enforce per-tier goal limit before creating.
         active_sub = await SubscriptionRepository(db).get_active_by_user(user.id)
         goal_limit = SubscriptionService.get_goal_limit_for_subscription(active_sub)
-        current_count = await self.repo.count_in_progress_by_user(user.id)
+        current_count = await self.repo.count_active_by_user(user.id)
         if current_count >= goal_limit:
             raise GoalLimitReached(goal_limit)
 
@@ -102,6 +103,64 @@ class GoalService:
         done = await task_repo.count_success_by_plan(plan.id)
         new_status = GoalStatus.SUCCESS if done == total else GoalStatus.FAILED
         await self.repo.update(goal, status=new_status)
+
+    async def get_commitment(self, goal_id: uuid.UUID, user: User) -> CommitmentOut:
+        """Return commitment details for a locked goal."""
+        goal = await self.repo.get(goal_id)
+        if not goal or str(goal.user_id) != str(user.id):
+            raise NotFound("Goal")
+        if goal.status != GoalStatus.LOCKED:
+            raise BadRequest("Goal is not locked")
+
+        db = self.repo.db
+        stake_result = await db.execute(
+            select(Stake).where(
+                Stake.goal_id == goal.id,
+                Stake.status == StakeStatus.PENDING,
+            )
+        )
+        stake = stake_result.scalar_one_or_none()
+        if stake is None:
+            raise NotFound("No pending commitment found")
+
+        # Derive actual generated days from the stake record, which was set
+        # using plan_days (capped by subscription tier) not plan.total_days
+        # (which equals the full goal duration for DURATION-mode goals).
+        actual_days = (
+            stake.total_committed // stake.amount_per_day
+            if stake.amount_per_day and stake.amount_per_day > 0
+            else 0
+        )
+        return CommitmentOut(
+            goal_id=goal.id,
+            amount_per_day=stake.amount_per_day,
+            plan_total_days=actual_days,
+            total_committed=stake.total_committed,
+            stake_id=stake.id,
+        )
+
+    async def unlock_goal(self, goal_id: uuid.UUID, user: User) -> Goal:
+        """Confirm commitment and move goal from locked → in_progress."""
+        goal = await self.repo.get(goal_id)
+        if not goal or str(goal.user_id) != str(user.id):
+            raise NotFound("Goal")
+        if goal.status != GoalStatus.LOCKED:
+            raise BadRequest("Goal is not locked")
+
+        db = self.repo.db
+        stake_result = await db.execute(
+            select(Stake).where(
+                Stake.goal_id == goal.id,
+                Stake.status == StakeStatus.PENDING,
+            )
+        )
+        stake = stake_result.scalar_one_or_none()
+        if stake:
+            stake.status = StakeStatus.ACTIVE
+        goal.status = GoalStatus.IN_PROGRESS
+        await db.commit()
+        await db.refresh(goal)
+        return goal
 
     async def enqueue_goal_job(
         self, user: User, goal_id: uuid.UUID, data: GoalGenerateRequest

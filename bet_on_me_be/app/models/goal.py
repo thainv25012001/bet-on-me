@@ -18,7 +18,7 @@ class Goal(UUIDBase):
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     target_date: Mapped[date] = mapped_column(Date, nullable=False)
     stake_per_day: Mapped[int] = mapped_column(Integer, nullable=False)
-    status: Mapped[str] = mapped_column(Text, default=GoalStatus.IN_PROGRESS, nullable=False)
+    status: Mapped[str] = mapped_column(Text, default=GoalStatus.DRAFT, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="goals")  # noqa: F821
     plans: Mapped[list["Plan"]] = relationship("Plan", back_populates="goal", cascade="all, delete-orphan")  # noqa: F821

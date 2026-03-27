@@ -24,11 +24,12 @@ class GoalRepository(BaseRepository[Goal]):
         )
         return result.scalar_one()
 
-    async def count_in_progress_by_user(self, user_id: uuid.UUID) -> int:
+    async def count_active_by_user(self, user_id: uuid.UUID) -> int:
+        """Count goals that are not yet resolved (draft + locked + in_progress)."""
         result = await self.db.execute(
             select(func.count()).select_from(Goal).where(
                 Goal.user_id == user_id,
-                Goal.status == GoalStatus.IN_PROGRESS,
+                Goal.status.not_in([GoalStatus.SUCCESS, GoalStatus.FAILED]),
             )
         )
         return result.scalar_one()

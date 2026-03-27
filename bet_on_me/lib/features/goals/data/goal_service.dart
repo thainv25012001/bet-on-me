@@ -93,6 +93,29 @@ class GoalService {
     );
   }
 
+  /// Returns commitment details for a locked goal.
+  /// Result: `{goal_id, stake_id, amount_per_day, plan_total_days, total_committed}`.
+  Future<Map<String, dynamic>> getCommitment(String goalId) async {
+    final token = await _authService.getStoredToken();
+    final response = await ApiClient.get(
+      '/api/v1/goals/$goalId/commitment',
+      token: token,
+    );
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  /// Confirms the financial commitment and moves the goal to in_progress.
+  /// Returns the updated `GoalOut` map.
+  Future<Map<String, dynamic>> unlockGoal(String goalId) async {
+    final token = await _authService.getStoredToken();
+    final response = await ApiClient.post(
+      '/api/v1/goals/$goalId/unlock',
+      {},
+      token: token,
+    );
+    return response['data'] as Map<String, dynamic>;
+  }
+
   Future<void> deleteGoal(String goalId) async {
     final token = await _authService.getStoredToken();
     await ApiClient.delete('/api/v1/goals/$goalId', token: token);

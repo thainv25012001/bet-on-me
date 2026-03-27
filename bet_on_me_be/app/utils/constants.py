@@ -6,6 +6,8 @@ import time and all valid values are discoverable in one place.
 
 
 class GoalStatus:
+    DRAFT = "draft"
+    LOCKED = "locked"
     IN_PROGRESS = "in_progress"
     SUCCESS = "success"
     FAILED = "failed"
@@ -30,6 +32,7 @@ class SubscriptionStatus:
 
 
 class StakeStatus:
+    PENDING = "pending"
     ACTIVE = "active"
 
 

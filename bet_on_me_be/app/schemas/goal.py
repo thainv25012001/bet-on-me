@@ -46,3 +46,11 @@ class GoalOut(BaseModel):
 
 class GoalWithPlanOut(GoalOut):
     plan: PlanOut
+
+
+class CommitmentOut(BaseModel):
+    goal_id: uuid.UUID
+    stake_id: uuid.UUID
+    amount_per_day: int
+    plan_total_days: int
+    total_committed: int

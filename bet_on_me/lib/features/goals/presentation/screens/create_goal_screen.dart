@@ -162,6 +162,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         ...job,
         'goal_id': goalId,
         'title': _titleController.text.trim(),
+        'hours_per_day': double.parse(_hoursController.text),
+        'mode': _mode == _PlanMode.deadline ? PlanMode.duration : PlanMode.hours,
       });
     } catch (e) {
       if (!mounted) return;

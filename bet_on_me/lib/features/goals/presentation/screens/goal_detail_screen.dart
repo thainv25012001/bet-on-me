@@ -11,11 +11,13 @@ class GoalDetailScreen extends StatefulWidget {
     required this.goalId,
     required this.goalTitle,
     this.startDate,
+    this.goalStatus,
   });
 
   final String goalId;
   final String goalTitle;
   final String? startDate;
+  final String? goalStatus;
 
   @override
   State<GoalDetailScreen> createState() => _GoalDetailScreenState();
@@ -25,22 +27,32 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   final _goalService = GoalService();
   bool _loading = true;
   bool _deleting = false;
+  bool _unlocking = false;
   String? _error;
   int _totalDays = 0;
   String? _overview;
   double? _hoursPerDay;
   List<Map<String, dynamic>> _tasks = [];
   int _todayDayNumber = 0;
+  String? _currentStatus;
+  Map<String, dynamic>? _commitment;
 
   @override
   void initState() {
     super.initState();
+    _currentStatus = widget.goalStatus;
     _loadPlan();
   }
 
   Future<void> _loadPlan() async {
     try {
-      final plan = await _goalService.getGoalPlan(widget.goalId);
+      final futures = <Future>[
+        _goalService.getGoalPlan(widget.goalId),
+        if (_currentStatus == GoalStatus.locked)
+          _goalService.getCommitment(widget.goalId),
+      ];
+      final results = await Future.wait(futures);
+      final plan = results[0] as Map<String, dynamic>;
       final rawTasks = plan['tasks'] as List<dynamic>? ?? [];
       final totalDays = (plan['total_days'] as num?)?.toInt() ?? 0;
       setState(() {
@@ -48,6 +60,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         _overview = plan['overview'] as String?;
         _hoursPerDay = (plan['hours_per_day'] as num?)?.toDouble();
         _tasks = rawTasks.cast<Map<String, dynamic>>();
+        if (results.length > 1) {
+          _commitment = results[1] as Map<String, dynamic>;
+        }
         _loading = false;
       });
       _setTodayDay(widget.startDate);
@@ -56,6 +71,139 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _unlock() async {
+    final totalCommitted =
+        (_commitment?['total_committed'] as num?)?.toInt() ?? 0;
+    final amountPerDay =
+        (_commitment?['amount_per_day'] as num?)?.toInt() ?? 0;
+    final planDays =
+        (_commitment?['plan_total_days'] as num?)?.toInt() ?? _totalDays;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final c = AppThemeColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: c.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Confirm Commitment',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: c.text,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _CommitRow(
+                label: 'Plan duration',
+                value: '$planDays days',
+                colors: c,
+              ),
+              const SizedBox(height: 10),
+              _CommitRow(
+                label: 'Daily stake',
+                value: '\$$amountPerDay / day',
+                colors: c,
+              ),
+              Divider(color: c.border, height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total to commit',
+                    style: TextStyle(
+                      color: c.text,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    '\$$totalCommitted',
+                    style: const TextStyle(
+                      color: AppColors.gold,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You get this back when you complete all daily tasks.',
+                style: TextStyle(
+                  color: c.textMuted,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actionsPadding:
+              const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: c.textMuted,
+                      side: BorderSide(color: c.border),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Commit',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _unlocking = true);
+    try {
+      await _goalService.unlockGoal(widget.goalId);
+      if (!mounted) return;
+      Navigator.pop(context, 'unlocked');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _unlocking = false);
+      showErrorDialog(context, 'Could not unlock goal. Please try again.');
     }
   }
 
@@ -117,7 +265,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     setState(() => _deleting = true);
     try {
       await _goalService.deleteGoal(widget.goalId);
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, 'deleted');
     } catch (e) {
       if (mounted) {
         setState(() => _deleting = false);
@@ -298,44 +446,59 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.gold,
-              ),
+              child: CircularProgressIndicator(color: AppColors.gold),
             )
-          : (_error != null || _totalDays == 0)
+          : _currentStatus == GoalStatus.draft
               ? Center(
-                  child: Text(
-                    'No plan found for this goal.',
-                    style: TextStyle(color: c.textMuted),
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      'Your plan is being generated…\nCheck back soon.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.textMuted,
+                        fontSize: 15,
+                        height: 1.6,
+                      ),
+                    ),
                   ),
                 )
-              : _buildPlanView(c),
+              : (_error != null || _totalDays == 0)
+                  ? Center(
+                      child: Text(
+                        'No plan found for this goal.',
+                        style: TextStyle(color: c.textMuted),
+                      ),
+                    )
+                  : _buildPlanView(c),
     );
   }
 
   Widget _buildPlanView(AppThemeColors c) {
+    final isLocked = _currentStatus == GoalStatus.locked;
     final progress =
         _todayDayNumber > 0 ? (_todayDayNumber - 1) / _totalDays : 0.0;
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 20, vertical: 16),
-      itemCount: _totalDays + 1,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      itemCount: _totalDays + (isLocked ? 2 : 1),
       itemBuilder: (context, index) {
-        if (index == 0) return _buildHeader(c, progress);
-        final dayTasks = _tasksForDay(index);
+        if (isLocked && index == 0) return _buildUnlockCard(c);
+        final adjustedIndex = isLocked ? index - 1 : index;
+        if (adjustedIndex == 0) return _buildHeader(c, progress);
+        final dayTasks = _tasksForDay(adjustedIndex);
         final execDate = dayTasks.isNotEmpty
             ? dayTasks.first['execution_date'] as String?
             : null;
         return _DayRow(
-          day: index,
+          day: adjustedIndex,
           todayDayNumber: _todayDayNumber,
           executionDate: execDate,
-          tasksPreview: _buildDayPreview(index),
-          pastStatus: index < _todayDayNumber
-              ? _pastDayStatus(index)
+          tasksPreview: _buildDayPreview(adjustedIndex),
+          pastStatus: adjustedIndex < _todayDayNumber
+              ? _pastDayStatus(adjustedIndex)
               : '',
-          onTap: () => _showDayTasks(context, index),
+          onTap: () => _showDayTasks(context, adjustedIndex),
         );
       },
     );
@@ -348,6 +511,94 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       return dayTasks.first['title'] as String? ?? 'Task';
     }
     return '${dayTasks.length} tasks';
+  }
+
+  Widget _buildUnlockCard(AppThemeColors c) {
+    final totalCommitted =
+        (_commitment?['total_committed'] as num?)?.toInt() ?? 0;
+    final amountPerDay =
+        (_commitment?['amount_per_day'] as num?)?.toInt() ?? 0;
+    final planDays =
+        (_commitment?['plan_total_days'] as num?)?.toInt() ?? _totalDays;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.gold.withAlpha(120)),
+        boxShadow: c.isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: c.cardShadow,
+                  blurRadius: 12,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lock_outline, color: AppColors.gold, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Goal Locked',
+                style: TextStyle(
+                  color: c.text,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Commit \$$totalCommitted to unlock this goal.\n'
+            '\$$amountPerDay/day × $planDays days.',
+            style: TextStyle(
+              color: c.textMuted,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _unlocking ? null : _unlock,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _unlocking
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.black,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Commit & Unlock',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildHeader(AppThemeColors c, double progress) {
@@ -505,6 +756,41 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               ],
             ),
           ),
+      ],
+    );
+  }
+}
+
+// ── Commit Row ───────────────────────────────────────────────────────────────
+
+class _CommitRow extends StatelessWidget {
+  const _CommitRow({
+    required this.label,
+    required this.value,
+    required this.colors,
+  });
+
+  final String label;
+  final String value;
+  final AppThemeColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: colors.textMuted, fontSize: 13),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: colors.text,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

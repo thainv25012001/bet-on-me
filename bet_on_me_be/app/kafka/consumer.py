@@ -20,7 +20,8 @@ from app.schemas.goal import GoalGenerateRequest
 from app.services.goal_service import _generate_tasks
 from app.services.subscription_service import SubscriptionService
 from app.utils import error_codes as ec
-from app.utils.constants import GoalMode, JobStatus, PlanGeneratedBy
+from app.models.stake import Stake
+from app.utils.constants import GoalMode, GoalStatus, JobStatus, PlanGeneratedBy, StakeStatus
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,8 @@ async def _process_message(msg) -> None:
             max_days=max_days,
         )
         total_days = result["total_days"]
+        # actual days generated — capped by subscription tier (may be < total_days)
+        plan_days = result["plan_days"]
         real_target_date = (
             goal_target_date if gen_data.mode == GoalMode.DURATION
             else goal_start_date + timedelta(days=total_days)
@@ -160,15 +163,31 @@ async def _process_message(msg) -> None:
                     estimated_minutes=item.get("estimated_minutes"),
                 ))
 
+            # Lock the goal and record the financial commitment.
+            # Use plan_days (actual generated days, capped by tier) not
+            # plan.total_days (full goal duration) so free-tier users commit
+            # only for the days they actually received.
+            total_committed = plan_days * goal.stake_per_day
+            goal.status = GoalStatus.LOCKED
+            db.add(Stake(
+                goal_id=goal.id,
+                user_id=job.user_id,
+                amount_per_day=goal.stake_per_day,
+                total_committed=total_committed,
+                status=StakeStatus.PENDING,
+            ))
+
             job.status = JobStatus.SUCCESS
             job.completed_at = datetime.utcnow()
             await db.commit()
 
         logger.info("Job %s completed — plan created for goal %s", job_id_str, goal.id)
         await ws_manager.notify(job_id_str, {
-            "status": "success",
+            "status": JobStatus.SUCCESS,
             "job_id": job_id_str,
             "goal_id": str(goal.id),
+            "goal_status": GoalStatus.LOCKED,
+            "total_committed": total_committed,
         })
 
     except Exception as e:
