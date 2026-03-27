@@ -1,91 +1,14 @@
-You are a senior mobile UI/UX designer specializing in productivity and habit-building apps.
+1. I have a idea duration and hour per day
+    1. user input their goal and duration
+    - AI need to estimate how many hours per day they have to spend to achive that goal and base on that hours to set up tasks for those days
 
-Design a modern, clean, and highly intuitive UI/UX for a Flutter mobile application.
+    2. user choose hours per day they want do for their goal
+    - AI have to estimate how many day they need to keep up if they spent and from that build plan and taks for those days
 
-App Concept:
-The app helps users achieve a goal by following a daily step-by-step plan. 
-Each goal is broken into daily tasks, and users complete them one day at a time until they reach their final objective.
-
-Example goals:
-- Learn English
-- Lose weight
-- Prepare for an exam
-- Build a habit
-- Learn programming
-
-Design Objectives:
-- Extremely simple for users to follow daily steps
-- Focus on progress and motivation
-- Clean, minimal interface
-- Reduce cognitive overload
-- Make users clearly see "what to do today"
-
-Target Users:
-Students, professionals, and self-improvement learners.
-
-Core Features:
-- Create a goal
-- Automatically generate step-by-step daily plan
-- Daily tasks
-- Progress tracking
-- Streak tracking
-- Reminders
-- Achievement milestones
-
-Provide the UI/UX in the following structure:
-
-1. App Design Philosophy
-Explain how the design helps users stay focused and motivated.
-
-2. Design System
-Include:
-- Color palette (productivity-focused)
-- Typography
-- Button styles
-- Card styles
-- Progress indicators
-- Spacing rules
-
-3. Core Screens
-
-Design these screens in detail:
-
-1. Onboarding
-2. Create Goal
-3. Goal Plan Overview
-4. Today’s Tasks (MOST IMPORTANT SCREEN)
-5. Task Detail
-6. Progress Dashboard
-7. Streak & Achievements
-8. Notifications / Reminders
-9. Settings
-
-For each screen describe:
-- Layout
-- Components
-- User interactions
-- UX reasoning
-
-4. Navigation Structure
-Recommend the best navigation pattern for productivity apps.
-
-5. Flutter Implementation
-Suggest Flutter widgets and layout structures.
-
-6. Micro UX Details
-Include small details like:
-- progress animations
-- completion feedback
-- streak celebration
-- motivation messages
-
-Important:
-The UI must be minimal, modern, and optimized for daily habit usage.
-Users should immediately know what they need to do today.
-Avoid clutter and unnecessary features.
-
-Take inspiration from apps like:
-- Duolingo
-- Habitica
-- Todoist
-- Notion
+2. subscription
+- Add feature register subscription, reset every 30, we should have subscription date and expire date
+- 3 tier, free, pro, advanced
+- free tier only give use 7 days plan, for example, duration is 2 week, 1 month or more, they only have the plan for 7 first days
+- pro tier is 1 month mean 30 - 31 days
+- advanced is 1 year mean 365 days
+- i want add discount and discount time from to for subscription if i want 

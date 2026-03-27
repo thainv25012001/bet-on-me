@@ -33,3 +33,12 @@ async def get_current_user(
     if not user:
         raise Unauthorized("User not found")
     return user
+
+
+async def get_admin_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    from app.utils.exceptions import Forbidden
+    if not current_user.is_admin:
+        raise Forbidden()
+    return current_user

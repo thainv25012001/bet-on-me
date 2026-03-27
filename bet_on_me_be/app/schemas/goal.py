@@ -1,6 +1,7 @@
 import uuid
 from datetime import date, datetime
-from pydantic import BaseModel
+from typing import Literal
+from pydantic import BaseModel, model_validator
 from app.schemas.plan import PlanOut
 
 
@@ -8,9 +9,16 @@ class GoalCreate(BaseModel):
     title: str
     description: str | None = None
     start_date: date
-    target_date: date
+    target_date: date | None = None
     stake_per_day: int
     hours_per_day: float
+    mode: Literal["duration", "hours"] = "duration"
+
+    @model_validator(mode="after")
+    def validate_target_date_for_mode(self) -> "GoalCreate":
+        if self.mode == "duration" and self.target_date is None:
+            raise ValueError("target_date is required when mode is 'duration'")
+        return self
 
 
 class GoalUpdate(BaseModel):

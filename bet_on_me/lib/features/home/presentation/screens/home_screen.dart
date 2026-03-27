@@ -8,6 +8,7 @@ import 'package:bet_on_me/features/auth/presentation/screens/signin_screen.dart'
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
 import 'package:bet_on_me/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:bet_on_me/features/goals/presentation/screens/goal_detail_screen.dart';
+import 'package:bet_on_me/features/subscription/presentation/screens/subscription_screen.dart';
 import 'package:bet_on_me/main.dart';
 import 'daily_tasks_screen.dart';
 
@@ -176,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildDashboard(c),
           const DailyTasksPage(),
-          const _WalletPlaceholder(),
+          const SubscriptionScreen(),
         ],
       ),
       bottomNavigationBar: _AppBottomNav(
@@ -1239,9 +1240,9 @@ class _AppBottomNav extends StatelessWidget {
             label: 'Today',
           ),
           NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet),
-            label: 'Wallet',
+            icon: Icon(Icons.workspace_premium_outlined),
+            selectedIcon: Icon(Icons.workspace_premium),
+            label: 'Plans',
           ),
         ],
       ),
@@ -1249,34 +1250,3 @@ class _AppBottomNav extends StatelessWidget {
   }
 }
 
-// ── Wallet Placeholder ────────────────────────────────────────────────────────
-
-class _WalletPlaceholder extends StatelessWidget {
-  const _WalletPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppThemeColors.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            color: c.textMuted,
-            size: 52,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Wallet coming soon',
-            style: TextStyle(
-              color: c.textMuted,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

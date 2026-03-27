@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
 
     # Kafka
-    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:29092"
     KAFKA_GOAL_TOPIC: str = "goal_creation"
 
     class Config:

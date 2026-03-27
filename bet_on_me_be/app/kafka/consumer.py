@@ -13,8 +13,10 @@ from app.models.goal_job import GoalJob
 from app.models.goal import Goal
 from app.models.plan import Plan
 from app.models.task import Task
+from app.repositories.subscription_repository import SubscriptionRepository
 from app.schemas.goal import GoalCreate
 from app.services.goal_service import _generate_tasks
+from app.services.subscription_service import SubscriptionService
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +63,13 @@ async def _process_message(msg) -> None:
     job_uuid = uuid.UUID(job_id_str)
 
     # ── Phase 1: mark as processing ──────────────────────────────────────────
+    user_id: uuid.UUID | None = None
     async with AsyncSessionLocal() as db:
         job = await db.get(GoalJob, job_uuid)
         if job is None or job.status != "pending":
             # Duplicate delivery or already handled — skip.
             return
+        user_id = job.user_id
         job.status = "processing"
         job.started_at = datetime.utcnow()
         await db.commit()
@@ -73,8 +77,25 @@ async def _process_message(msg) -> None:
     # ── Phase 2: call OpenAI (no DB session held during network I/O) ─────────
     try:
         goal_data = GoalCreate(**payload)
-        duration = (goal_data.target_date - goal_data.start_date).days
-        result = await _generate_tasks(goal_data.title, duration, goal_data.hours_per_day)
+
+        async with AsyncSessionLocal() as db_sub:
+            active_sub = await SubscriptionRepository(db_sub).get_active_by_user(user_id)
+            max_days = SubscriptionService.get_max_days_for_subscription(active_sub)
+
+        duration = (goal_data.target_date - goal_data.start_date).days if goal_data.mode == "duration" else None
+        result = await _generate_tasks(
+            goal_title=goal_data.title,
+            hours_per_day=goal_data.hours_per_day,
+            mode=goal_data.mode,
+            duration=duration,
+            max_days=max_days,
+        )
+        total_days = result["total_days"]   # real full goal duration (uncapped)
+        # target_date reflects the full goal duration, not the subscription cap
+        real_target_date = (
+            goal_data.target_date if goal_data.mode == "duration"
+            else goal_data.start_date + timedelta(days=total_days)
+        )
     except Exception as e:
         logger.exception("OpenAI call failed for job %s", job_id_str)
         await _mark_failed(job_uuid, str(e))
@@ -86,15 +107,19 @@ async def _process_message(msg) -> None:
             job = await db.get(GoalJob, job_uuid)
 
             goal = Goal(
-                user_id=job.user_id,
-                **goal_data.model_dump(exclude={"hours_per_day"}),
+                user_id=user_id,
+                title=goal_data.title,
+                description=goal_data.description,
+                start_date=goal_data.start_date,
+                target_date=real_target_date,
+                stake_per_day=goal_data.stake_per_day,
             )
             db.add(goal)
             await db.flush()
 
             plan = Plan(
                 goal_id=goal.id,
-                total_days=duration,
+                total_days=total_days,
                 generated_by="ai",
                 overview=result.get("overview"),
                 hours_per_day=goal_data.hours_per_day,

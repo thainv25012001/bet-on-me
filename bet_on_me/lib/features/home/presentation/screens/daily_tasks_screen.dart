@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
+import 'package:bet_on_me/core/widgets/task_detail_sheet.dart';
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
 
 // ── Data models ───────────────────────────────────────────────────────────────
@@ -149,6 +150,20 @@ class _DailyTasksPageState extends State<DailyTasksPage> {
 
   void _showTaskDetail(BuildContext context, _TaskItem task) {
     final c = AppThemeColors.of(context);
+    final taskMap = <String, dynamic>{
+      'title': task.title,
+      'description': task.description,
+      'explanation': task.explanation,
+      'estimated_minutes': task.estimatedMinutes,
+      'status': task.status,
+      'guide': task.guide
+          .map((s) => {
+                'step': s.step,
+                'action': s.action,
+                'example': s.example,
+              })
+          .toList(),
+    };
     showModalBottomSheet(
       context: context,
       backgroundColor: c.surface,
@@ -156,8 +171,8 @@ class _DailyTasksPageState extends State<DailyTasksPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _TaskDetailSheet(
-        task: task,
+      builder: (_) => TaskDetailSheet(
+        task: taskMap,
         onMarkDone: task.isDone ? null : () => _toggleTask(task),
       ),
     );
@@ -472,7 +487,7 @@ class _TaskCard extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: onToggle,
-              child: _StatusIcon(status: task.status),
+              child: TaskStatusIcon(status: task.status),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -637,334 +652,6 @@ class _ErrorState extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Task detail bottom sheet ──────────────────────────────────────────────────
-
-class _TaskDetailSheet extends StatelessWidget {
-  final _TaskItem task;
-  final VoidCallback? onMarkDone;
-
-  const _TaskDetailSheet({required this.task, this.onMarkDone});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppThemeColors.of(context);
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.92,
-      expand: false,
-      builder: (_, controller) => Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: c.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
-              controller: controller,
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              children: [
-                // Header row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _StatusIcon(status: task.status),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        task.title,
-                        style: TextStyle(
-                          color: task.isDone ? c.textMuted : c.text,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          decoration: task.isDone
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                          decorationColor: c.textMuted,
-                        ),
-                      ),
-                    ),
-                    if (task.estimatedMinutes != null) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.goldDim,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${task.estimatedMinutes}m',
-                          style: const TextStyle(
-                            color: AppColors.gold,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-
-                // Description
-                if (task.description != null &&
-                    task.description!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    task.description!,
-                    style: TextStyle(
-                      color: c.text.withAlpha(178),
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-
-                // Explanation
-                if (task.explanation != null &&
-                    task.explanation!.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  const _SectionLabel(
-                    icon: Icons.lightbulb_outline,
-                    label: 'Why this matters',
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.goldDim,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: AppColors.gold.withAlpha(60)),
-                    ),
-                    child: Text(
-                      task.explanation!,
-                      style: TextStyle(
-                        color: c.text,
-                        fontSize: 13,
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                ],
-
-                // Guide
-                if (task.guide.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  const _SectionLabel(
-                    icon: Icons.route_outlined,
-                    label: 'Step-by-step guide',
-                  ),
-                  const SizedBox(height: 10),
-                  ...task.guide.map((s) => _GuideStepCard(step: s)),
-                ],
-
-                // Mark done button
-                if (onMarkDone != null) ...[
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        onMarkDone!();
-                        Navigator.pop(context);
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(Icons.check_circle_outline,
-                          color: Colors.white),
-                      label: const Text(
-                        'Mark as done',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Guide step card ───────────────────────────────────────────────────────────
-
-class _GuideStepCard extends StatelessWidget {
-  final _GuideStep step;
-  const _GuideStepCard({required this.step});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppThemeColors.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: c.bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              color: AppColors.goldDim,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.gold.withAlpha(80)),
-            ),
-            child: Center(
-              child: Text(
-                '${step.step}',
-                style: const TextStyle(
-                  color: AppColors.gold,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  step.action,
-                  style: TextStyle(
-                    color: c.text,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.4,
-                  ),
-                ),
-                if (step.example != null && step.example!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: c.surface,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'e.g. ',
-                          style: TextStyle(
-                            color: AppColors.gold,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            step.example!,
-                            style: TextStyle(
-                              color: c.textMuted,
-                              fontSize: 11,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Small reusable widgets ────────────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _SectionLabel({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.gold, size: 14),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.gold,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.3,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusIcon extends StatelessWidget {
-  final String status;
-  const _StatusIcon({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDone = status == 'success';
-    final isFailed = status == 'failed';
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 280),
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isDone
-            ? AppColors.success
-            : isFailed
-                ? AppColors.error
-                : Colors.transparent,
-        border: Border.all(
-          color: isDone
-              ? AppColors.success
-              : isFailed
-                  ? AppColors.error
-                  : AppThemeColors.of(context).textMuted,
-          width: 2,
-        ),
-      ),
-      child: isDone
-          ? const Icon(Icons.check, color: Colors.white, size: 13)
-          : isFailed
-              ? const Icon(Icons.close, color: Colors.white, size: 13)
-              : null,
     );
   }
 }

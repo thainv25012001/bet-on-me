@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
+import 'package:bet_on_me/core/widgets/task_detail_sheet.dart';
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
 
 class GoalDetailScreen extends StatefulWidget {
@@ -128,6 +129,20 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     }
   }
 
+  void _openTaskDetail(BuildContext context, Map<String, dynamic> task) {
+    final c = AppThemeColors.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: c.surface,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => TaskDetailSheet(task: task),
+    );
+  }
+
   List<Map<String, dynamic>> _tasksForDay(int day) => _tasks
       .where((t) => (t['day_number'] as num?)?.toInt() == day)
       .toList();
@@ -228,8 +243,11 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 16),
                       itemCount: dayTasks.length,
-                      itemBuilder: (_, i) =>
-                          _PlanTaskCard(task: dayTasks[i]),
+                      itemBuilder: (ctx, i) => _DayTaskCard(
+                        task: dayTasks[i],
+                        onTap: () => _openTaskDetail(
+                            ctx, dayTasks[i]),
+                      ),
                     ),
             ),
           ],
@@ -694,273 +712,126 @@ class _DayBadge extends StatelessWidget {
   }
 }
 
-// ── Plan Task Card ────────────────────────────────────────────────────────────
+// ── Day Task Card ─────────────────────────────────────────────────────────────
 
-class _PlanTaskCard extends StatelessWidget {
-  const _PlanTaskCard({required this.task});
+class _DayTaskCard extends StatelessWidget {
+  const _DayTaskCard({required this.task, required this.onTap});
 
   final Map<String, dynamic> task;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = AppThemeColors.of(context);
     final title = task['title'] as String? ?? 'Untitled';
-    final description = task['description'] as String?;
     final explanation = task['explanation'] as String?;
     final minutes = (task['estimated_minutes'] as num?)?.toInt();
-    final taskStatus = task['status'] as String? ?? 'pending';
-    final rawGuide = task['guide'] as List<dynamic>? ?? [];
+    final status = task['status'] as String? ?? 'pending';
+    final hasGuide =
+        (task['guide'] as List<dynamic>? ?? []).isNotEmpty;
 
-    final Color statusColor = taskStatus == 'success'
-        ? AppColors.success
-        : taskStatus == 'failed'
-            ? AppColors.error
-            : AppColors.gold;
-
-    final cardBg = taskStatus == 'success'
-        ? AppColors.successDim
-        : taskStatus == 'failed'
-            ? const Color(0x14FF3B30)
-            : c.bg;
-
-    final cardBorder = taskStatus == 'success'
-        ? AppColors.success.withAlpha(100)
-        : taskStatus == 'failed'
-            ? AppColors.error.withAlpha(100)
-            : c.border;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cardBorder),
-      ),
-      child: Theme(
-        data: Theme.of(context)
-            .copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(
-              horizontal: 14, vertical: 4),
-          childrenPadding:
-              const EdgeInsets.fromLTRB(14, 0, 14, 14),
-          leading: Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 2),
-            decoration: BoxDecoration(
-              color: statusColor,
-              shape: BoxShape.circle,
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: status == 'success'
+              ? AppColors.successDim
+              : status == 'failed'
+                  ? const Color(0x22EF4444)
+                  : c.bg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: status == 'success'
+                ? AppColors.success
+                : status == 'failed'
+                    ? AppColors.error
+                    : c.border,
           ),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: taskStatus == 'failed'
-                  ? AppColors.error
-                  : c.text,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              decoration: taskStatus == 'success'
-                  ? TextDecoration.lineThrough
-                  : TextDecoration.none,
-              decorationColor: c.textMuted,
-            ),
-          ),
-          subtitle: explanation != null && explanation.isNotEmpty
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Text(
-                    explanation,
-                    style: TextStyle(
-                      color: c.textMuted,
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                )
-              : null,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (minutes != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.goldDim,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${minutes}m',
-                    style: const TextStyle(
-                      color: AppColors.gold,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              if (rawGuide.isNotEmpty) ...[
-                const SizedBox(width: 6),
-                Icon(
-                  Icons.expand_more,
-                  color: c.textMuted,
-                  size: 18,
-                ),
-              ],
-            ],
-          ),
-          showTrailingIcon: rawGuide.isNotEmpty ||
-              (description != null && description.isNotEmpty),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (description != null &&
-                description.isNotEmpty) ...[
-              Text(
-                description,
-                style: TextStyle(
-                  color: c.text.withAlpha(200),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (rawGuide.isNotEmpty) ...[
-              Row(
+            TaskStatusIcon(status: status),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.route_outlined,
-                    color: AppColors.gold,
-                    size: 13,
-                  ),
-                  const SizedBox(width: 5),
                   Text(
-                    'STEP-BY-STEP GUIDE',
+                    title,
                     style: TextStyle(
-                      color: AppColors.gold,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
+                      color: status == 'success'
+                          ? c.textMuted
+                          : status == 'failed'
+                              ? AppColors.error
+                              : c.text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      decoration: status == 'success'
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      decorationColor: c.textMuted,
                     ),
                   ),
+                  if (explanation != null &&
+                      explanation.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      explanation,
+                      style: TextStyle(
+                        color: c.textMuted,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 10),
-              ...rawGuide.map((s) {
-                final sm = s as Map<String, dynamic>;
-                final stepNum =
-                    (sm['step'] as num?)?.toInt() ?? 0;
-                final action = sm['action'] as String? ?? '';
-                final example = sm['example'] as String?;
-                return _GuideStep(
-                  stepNum: stepNum,
-                  action: action,
-                  example: example,
-                  colors: c,
-                );
-              }),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Guide Step ────────────────────────────────────────────────────────────────
-
-class _GuideStep extends StatelessWidget {
-  const _GuideStep({
-    required this.stepNum,
-    required this.action,
-    required this.example,
-    required this.colors,
-  });
-
-  final int stepNum;
-  final String action;
-  final String? example;
-  final AppThemeColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-              color: AppColors.goldDim,
-              shape: BoxShape.circle,
             ),
-            child: Center(
-              child: Text(
-                '$stepNum',
-                style: const TextStyle(
-                  color: AppColors.gold,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  action,
-                  style: TextStyle(
-                    color: colors.text,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    height: 1.4,
-                  ),
-                ),
-                if (example != null &&
-                    example!.isNotEmpty) ...[
-                  const SizedBox(height: 5),
-                  Row(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'e.g. ',
-                        style: TextStyle(
-                          color: AppColors.gold,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
+                if (minutes != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.goldDim,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${minutes}m',
+                      style: const TextStyle(
+                        color: AppColors.gold,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                       ),
-                      Expanded(
-                        child: Text(
-                          example!,
-                          style: TextStyle(
-                            color: colors.textMuted,
-                            fontSize: 11,
-                            height: 1.4,
-                          ),
-                        ),
+                    ),
+                  ),
+                if (hasGuide) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.list_alt_outlined,
+                          color: c.textMuted, size: 12),
+                      const SizedBox(width: 3),
+                      Text(
+                        'Guide',
+                        style:
+                            TextStyle(color: c.textMuted, fontSize: 10),
                       ),
                     ],
                   ),
                 ],
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

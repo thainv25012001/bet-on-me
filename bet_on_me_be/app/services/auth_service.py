@@ -7,7 +7,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.schemas.user import UserCreate
 from app.utils.exceptions import BadRequest, Conflict, NotFound, Unauthorized
 
-_RESET_TOKEN_TTL_HOURS = 1
+_RESET_TOKEN_TTL_HOURS = 6
 
 
 class AuthService:
