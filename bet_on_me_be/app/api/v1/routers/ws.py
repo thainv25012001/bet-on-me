@@ -9,6 +9,7 @@ from app.core.ws_manager import ws_manager
 from app.db.session import get_db
 from app.models.goal_job import GoalJob
 from app.repositories.user_repository import UserRepository
+from app.utils.constants import JobStatus
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ async def job_status_ws(
         return
 
     # ── 3. Race-condition guard: job already finished ─────────────────────────
-    if job.status in ("success", "failed"):
+    if job.status in (JobStatus.SUCCESS, JobStatus.FAILED):
         await websocket.accept()
         await websocket.send_json({
             "status": job.status,

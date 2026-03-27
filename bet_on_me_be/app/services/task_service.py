@@ -1,12 +1,16 @@
 import uuid
 from datetime import date
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.task_repository import TaskRepository
 from app.repositories.plan_repository import PlanRepository
 from app.repositories.goal_repository import GoalRepository
 from app.schemas.task import TaskCreate
+from app.models.goal import Goal
+from app.models.plan import Plan
 from app.models.task import Task
 from app.models.user import User
+from app.utils.constants import GoalStatus, TaskStatus
 from app.utils.exceptions import NotFound, Forbidden
 
 
@@ -48,4 +52,25 @@ class TaskService:
 
     async def update_task_status(self, task_id: uuid.UUID, user: User, status: str) -> Task:
         task = await self.get_task(task_id, user)
-        return await self.repo.update(task, status=status)
+        updated = await self.repo.update(task, status=status)
+        if status == TaskStatus.SUCCESS:
+            await self._maybe_evaluate_goal(task)
+        return updated
+
+    async def _maybe_evaluate_goal(self, task: Task) -> None:
+        """Trigger goal evaluation immediately when a task is marked success."""
+        from app.services.goal_service import GoalService
+        db = self.repo.db
+
+        plan = await db.get(Plan, task.plan_id)
+        if plan is None:
+            return
+
+        goal_result = await db.execute(
+            select(Goal).where(Goal.id == plan.goal_id, Goal.status == GoalStatus.IN_PROGRESS)
+        )
+        goal = goal_result.scalar_one_or_none()
+        if goal is None:
+            return
+
+        await GoalService(db).evaluate_goal_status(goal)

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:bet_on_me/core/constants/app_status.dart';
 import 'package:bet_on_me/core/errors/app_error_messages.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 import 'package:bet_on_me/features/auth/data/auth_service.dart';
@@ -137,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     final status = payload['status'] as String? ?? '';
-    if (status == 'success') {
+    if (status == JobStatus.success) {
       setState(() {
         _pendingJob = null;
         _pendingJobError = null;
@@ -155,15 +156,15 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final status = await _goalService.pollJob(jobId);
       if (!mounted) return;
-      final jobStatus = status['status'] as String? ?? 'pending';
-      if (jobStatus == 'success') {
+      final jobStatus = status['status'] as String? ?? JobStatus.pending;
+      if (jobStatus == JobStatus.success) {
         _elapsedTimer?.cancel();
         setState(() {
           _pendingJob = null;
           _pendingJobError = null;
         });
         await _loadGoals();
-      } else if (jobStatus == 'failed') {
+      } else if (jobStatus == JobStatus.failed) {
         _elapsedTimer?.cancel();
         final errorCode = status['error_code'] as String?;
         setState(() {
@@ -359,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDashboard(AppThemeColors c) {
     final activeGoals = _goals
-        .where((g) => (g['status'] as String?) == 'active')
+        .where((g) => (g['status'] as String?) == GoalStatus.inProgress)
         .toList();
 
     return SafeArea(
@@ -440,29 +441,18 @@ class _HomeScreenState extends State<HomeScreen> {
               // ── Stats ─────────────────────────────────────────
               if (!_goalsLoading)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20),
-                  child: Row(
-                    children: [
-                      _StatChip(
-                        icon: '🎯',
-                        label: 'Active',
-                        value: '${activeGoals.length}',
-                      ),
-                      const SizedBox(width: 10),
-                      _StatChip(
-                        icon: '📋',
-                        label: 'Total',
-                        value: '${_goals.length}',
-                      ),
-                      const SizedBox(width: 10),
-                      _StatChip(
-                        icon: '✅',
-                        label: 'Done',
-                        value:
-                            '${_goals.where((g) => g['status'] == 'completed').length}',
-                      ),
-                    ],
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _StatsRow(
+                    total: _goals.length,
+                    inProgress: _goals
+                        .where((g) => g['status'] == GoalStatus.inProgress)
+                        .length,
+                    success: _goals
+                        .where((g) => g['status'] == GoalStatus.success)
+                        .length,
+                    failed: _goals
+                        .where((g) => g['status'] == GoalStatus.failed)
+                        .length,
                   ),
                 ),
 
@@ -1067,7 +1057,7 @@ class _GoalListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppThemeColors.of(context);
     final title = goal['title'] as String? ?? 'Untitled';
-    final status = goal['status'] as String? ?? 'active';
+    final status = goal['status'] as String? ?? GoalStatus.inProgress;
     final startDateStr = goal['start_date'] as String?;
     final targetDateStr = goal['target_date'] as String?;
 
@@ -1086,7 +1076,7 @@ class _GoalListItem extends StatelessWidget {
       progress = totalDays > 0 ? passed / totalDays : 0;
     }
 
-    final isCompleted = status == 'completed';
+    final isCompleted = status == GoalStatus.success;
     final statusColor =
         isCompleted ? AppColors.success : AppColors.gold;
 
@@ -1180,68 +1170,123 @@ class _GoalListItem extends StatelessWidget {
   }
 }
 
-// ── Stat Chip ─────────────────────────────────────────────────────────────────
+// ── Stats Row ─────────────────────────────────────────────────────────────────
 
-class _StatChip extends StatelessWidget {
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    required this.value,
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({
+    required this.total,
+    required this.inProgress,
+    required this.success,
+    required this.failed,
   });
 
-  final String icon;
-  final String label;
+  final int total;
+  final int inProgress;
+  final int success;
+  final int failed;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: c.isDark ? Border.all(color: c.border) : null,
+        boxShadow: c.isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: c.cardShadow,
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            _StatCell(value: '$total', label: 'Total', color: c.text),
+            _VerticalDivider(color: c.border),
+            _StatCell(
+                value: '$inProgress',
+                label: 'In Progress',
+                color: AppColors.gold),
+            _VerticalDivider(color: c.border),
+            _StatCell(
+                value: '$success',
+                label: 'Success',
+                color: AppColors.success),
+            _VerticalDivider(color: c.border),
+            _StatCell(
+                value: '$failed', label: 'Failed', color: AppColors.error),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatCell extends StatelessWidget {
+  const _StatCell({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
   final String value;
+  final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     final c = AppThemeColors.of(context);
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: c.isDark ? Border.all(color: c.border) : null,
-          boxShadow: c.isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: c.cardShadow,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(icon, style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 8),
             Text(
               value,
               style: TextStyle(
-                color: c.text,
-                fontSize: 20,
+                color: color,
+                fontSize: 28,
                 fontWeight: FontWeight.w800,
+                height: 1,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 5),
             Text(
               label,
               style: TextStyle(
                 color: c.textMuted,
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
     );
   }
+}
+
+// ── Vertical Divider ─────────────────────────────────────────────────────────
+
+class _VerticalDivider extends StatelessWidget {
+  const _VerticalDivider({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 1,
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        color: color,
+      );
 }
 
 // ── App Bottom Nav ────────────────────────────────────────────────────────────

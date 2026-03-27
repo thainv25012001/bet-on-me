@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 import 'package:bet_on_me/core/services/api_client.dart';
+import 'package:bet_on_me/core/widgets/app_dialog.dart';
 import 'package:bet_on_me/features/auth/data/auth_service.dart';
 import 'package:bet_on_me/features/auth/presentation/widgets/auth_text_field.dart';
 import 'reset_password_screen.dart';
@@ -58,9 +59,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
-    );
+    showErrorDialog(context, message);
   }
 
   void _showInfo(String message) {

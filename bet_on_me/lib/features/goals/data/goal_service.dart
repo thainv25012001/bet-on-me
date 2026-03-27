@@ -1,3 +1,4 @@
+import 'package:bet_on_me/core/constants/app_status.dart';
 import 'package:bet_on_me/core/services/api_client.dart';
 import 'package:bet_on_me/features/auth/data/auth_service.dart';
 
@@ -39,7 +40,7 @@ class GoalService {
   Future<Map<String, dynamic>> generateGoal(
     String goalId, {
     required double hoursPerDay,
-    String mode = 'duration',
+    String mode = PlanMode.duration,
   }) async {
     final token = await _authService.getStoredToken();
     final response = await ApiClient.post(

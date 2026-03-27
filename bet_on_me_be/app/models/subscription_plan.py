@@ -17,6 +17,7 @@ class SubscriptionPlan(UUIDBase):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     features: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     max_plan_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_goal_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     expires_after_days: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
     discount_valid_from: Mapped[date | None] = mapped_column(Date, nullable=True)

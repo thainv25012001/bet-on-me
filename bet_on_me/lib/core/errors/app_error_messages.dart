@@ -21,6 +21,7 @@ class AppErrorMessages {
   static const forbidden            = 'FORBIDDEN';
   static const goalNotFound         = 'GOAL_NOT_FOUND';
   static const jobNotFound          = 'JOB_NOT_FOUND';
+  static const goalLimitReached     = 'GOAL_LIMIT_REACHED';
 
   // ── Goal / Plan ───────────────────────────────────────────────────────────
   static const aiServiceError       = 'AI_SERVICE_ERROR';
@@ -59,6 +60,8 @@ class AppErrorMessages {
         'This goal no longer exists.',
     jobNotFound:
         'Could not find the creation job. Please try again.',
+    goalLimitReached:
+        "You've reached the goal limit for your current plan. Upgrade to add more goals.",
 
     // Goal / Plan — no technical details exposed
     aiServiceError:

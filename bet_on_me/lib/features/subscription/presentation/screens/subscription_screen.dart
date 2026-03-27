@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
+import 'package:bet_on_me/core/widgets/app_dialog.dart';
 import 'package:bet_on_me/features/subscription/data/subscription_service.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -53,7 +54,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         const SnackBar(content: Text('Subscription activated!')),
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) showErrorDialog(context, e.toString());
     } finally {
       if (mounted) setState(() => _subscribingTier = null);
     }
@@ -73,7 +74,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         const SnackBar(content: Text('Subscription cancelled.')),
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) showErrorDialog(context, e.toString());
     }
   }
 

@@ -12,6 +12,7 @@ class SubscriptionPlanOut(BaseModel):
     description: str
     features: list[str]
     max_plan_days: int
+    total_goal_limit: int
     expires_after_days: int
     discount_percent: float | None
     discount_valid_from: date | None
@@ -41,6 +42,7 @@ class SubscriptionPlanOut(BaseModel):
             description=plan.description,  # type: ignore[union-attr]
             features=plan.features or [],  # type: ignore[union-attr]
             max_plan_days=plan.max_plan_days,  # type: ignore[union-attr]
+            total_goal_limit=plan.total_goal_limit,  # type: ignore[union-attr]
             expires_after_days=plan.expires_after_days,  # type: ignore[union-attr]
             discount_percent=plan.discount_percent if discount_active else None,  # type: ignore[union-attr]
             discount_valid_from=plan.discount_valid_from if discount_active else None,  # type: ignore[union-attr]

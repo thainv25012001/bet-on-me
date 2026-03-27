@@ -1,18 +1,22 @@
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.goal_repository import GoalRepository
 from app.repositories.subscription_repository import SubscriptionRepository
+from app.repositories.task_repository import TaskRepository
 from app.schemas.goal import GoalCreate, GoalGenerateRequest, GoalUpdate
 from app.models.goal import Goal
 from app.models.goal_job import GoalJob
+from app.models.plan import Plan
 from app.models.user import User
 from app.core.config import settings
 from app.services.subscription_service import SubscriptionService
-from app.utils.exceptions import NotFound, Forbidden
+from app.utils.constants import GoalStatus, GoalMode
+from app.utils.exceptions import NotFound, Forbidden, GoalLimitReached
 
 
 class GoalService:
@@ -28,6 +32,14 @@ class GoalService:
     async def create_goal_draft(self, user: User, data: GoalCreate) -> Goal:
         """Persist basic goal info immediately. Plan/tasks are generated async."""
         db = self.repo.db
+
+        # Enforce per-tier goal limit before creating.
+        active_sub = await SubscriptionRepository(db).get_active_by_user(user.id)
+        goal_limit = SubscriptionService.get_goal_limit_for_subscription(active_sub)
+        current_count = await self.repo.count_in_progress_by_user(user.id)
+        if current_count >= goal_limit:
+            raise GoalLimitReached(goal_limit)
+
         goal = Goal(
             user_id=user.id,
             title=data.title,
@@ -58,6 +70,39 @@ class GoalService:
         goal = await self.get_goal(goal_id, user)
         await self.repo.delete(goal)
 
+    async def evaluate_goal_status(self, goal: Goal) -> None:
+        """Set goal to 'success' or 'failed' if the deadline has passed in the user's timezone.
+        Does nothing if the deadline has not yet passed or no plan exists."""
+        db = self.repo.db
+
+        # Resolve the user's local date.
+        user = await db.get(User, goal.user_id)
+        try:
+            tz = ZoneInfo(user.timezone or "UTC")
+        except ZoneInfoNotFoundError:
+            tz = ZoneInfo("UTC")
+        local_date = datetime.now(dt_timezone.utc).astimezone(tz).date()
+
+        # Only evaluate once the deadline day has fully passed in the user's timezone.
+        if local_date <= goal.target_date:
+            return
+
+        # Find the plan.
+        plan_result = await db.execute(select(Plan).where(Plan.goal_id == goal.id))
+        plan = plan_result.scalar_one_or_none()
+        if plan is None:
+            return
+
+        # Count tasks.
+        task_repo = TaskRepository(db)
+        total = await task_repo.count_by_plan(plan.id)
+        if total == 0:
+            return
+
+        done = await task_repo.count_success_by_plan(plan.id)
+        new_status = GoalStatus.SUCCESS if done == total else GoalStatus.FAILED
+        await self.repo.update(goal, status=new_status)
+
     async def enqueue_goal_job(
         self, user: User, goal_id: uuid.UUID, data: GoalGenerateRequest
     ) -> dict:
@@ -73,7 +118,7 @@ class GoalService:
         if str(goal.user_id) != str(user.id):
             raise Forbidden()
 
-        if data.mode == "duration":
+        if data.mode == GoalMode.DURATION:
             total_days = (goal.target_date - goal.start_date).days
         else:
             active_sub = await SubscriptionRepository(db).get_active_by_user(user.id)
@@ -128,7 +173,7 @@ async def _generate_tasks(
     client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     daily_minutes = int(hours_per_day * 60)
 
-    if mode == "duration":
+    if mode == GoalMode.DURATION:
         # plan_days = capped task window; total_days = real full goal duration
         plan_days = min(duration, max_days)
         prompt = _build_duration_prompt(goal_title, duration, plan_days, hours_per_day, daily_minutes)
@@ -152,7 +197,7 @@ async def _generate_tasks(
     if tasks is None:
         raise ValueError(f"Unexpected OpenAI response shape: {content}")
 
-    if mode == "hours":
+    if mode == GoalMode.HOURS:
         estimated_total_days = parsed.get("estimated_total_days")
         if not isinstance(estimated_total_days, int) or estimated_total_days < 1:
             raise ValueError(f"Mode B response missing valid estimated_total_days: {content}")

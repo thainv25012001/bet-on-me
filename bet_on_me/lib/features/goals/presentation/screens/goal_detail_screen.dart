@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:bet_on_me/core/constants/app_status.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
+import 'package:bet_on_me/core/widgets/app_dialog.dart';
 import 'package:bet_on_me/core/widgets/task_detail_sheet.dart';
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
 
@@ -119,12 +121,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _deleting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not delete: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        showErrorDialog(context, 'Could not delete goal. Please try again.');
       }
     }
   }
@@ -152,8 +149,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final dayTasks = _tasksForDay(day);
     if (dayTasks.isEmpty) return 'empty';
     final allDone =
-        dayTasks.every((t) => (t['status'] as String?) == 'success');
-    return allDone ? 'success' : 'failed';
+        dayTasks.every((t) => (t['status'] as String?) == TaskStatus.success);
+    return allDone ? TaskStatus.success : TaskStatus.failed;
   }
 
   void _showDayTasks(BuildContext context, int dayNumber) {
@@ -326,9 +323,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       itemCount: _totalDays + 1,
       itemBuilder: (context, index) {
         if (index == 0) return _buildHeader(c, progress);
+        final dayTasks = _tasksForDay(index);
+        final execDate = dayTasks.isNotEmpty
+            ? dayTasks.first['execution_date'] as String?
+            : null;
         return _DayRow(
           day: index,
           todayDayNumber: _todayDayNumber,
+          executionDate: execDate,
           tasksPreview: _buildDayPreview(index),
           pastStatus: index < _todayDayNumber
               ? _pastDayStatus(index)
@@ -514,6 +516,7 @@ class _DayRow extends StatelessWidget {
   const _DayRow({
     required this.day,
     required this.todayDayNumber,
+    required this.executionDate,
     required this.tasksPreview,
     required this.pastStatus,
     required this.onTap,
@@ -521,17 +524,33 @@ class _DayRow extends StatelessWidget {
 
   final int day;
   final int todayDayNumber;
+  final String? executionDate;
   final String tasksPreview;
   final String pastStatus;
   final VoidCallback onTap;
+
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  String? _formatDate(String? raw) {
+    if (raw == null) return null;
+    try {
+      final d = DateTime.parse(raw);
+      return '${_months[d.month - 1]} ${d.day}';
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = AppThemeColors.of(context);
     final isToday = day == todayDayNumber;
     final isPast = day < todayDayNumber;
-    final isPastDone = pastStatus == 'success';
-    final isPastMissed = pastStatus == 'failed';
+    final isPastDone = pastStatus == TaskStatus.success;
+    final isPastMissed = pastStatus == TaskStatus.failed;
 
     return GestureDetector(
       onTap: onTap,
@@ -614,6 +633,17 @@ class _DayRow extends StatelessWidget {
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.5,
                             ),
+                          ),
+                        ),
+                      ],
+                      if (_formatDate(executionDate) != null) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '· ${_formatDate(executionDate)}',
+                          style: TextStyle(
+                            color: c.textMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
@@ -726,7 +756,7 @@ class _DayTaskCard extends StatelessWidget {
     final title = task['title'] as String? ?? 'Untitled';
     final explanation = task['explanation'] as String?;
     final minutes = (task['estimated_minutes'] as num?)?.toInt();
-    final status = task['status'] as String? ?? 'pending';
+    final status = task['status'] as String? ?? TaskStatus.pending;
     final hasGuide =
         (task['guide'] as List<dynamic>? ?? []).isNotEmpty;
 
@@ -736,16 +766,16 @@ class _DayTaskCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: status == 'success'
+          color: status == TaskStatus.success
               ? AppColors.successDim
-              : status == 'failed'
+              : status == TaskStatus.failed
                   ? const Color(0x22EF4444)
                   : c.bg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: status == 'success'
+            color: status == TaskStatus.success
                 ? AppColors.success
-                : status == 'failed'
+                : status == TaskStatus.failed
                     ? AppColors.error
                     : c.border,
           ),
@@ -762,14 +792,14 @@ class _DayTaskCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      color: status == 'success'
+                      color: status == TaskStatus.success
                           ? c.textMuted
-                          : status == 'failed'
+                          : status == TaskStatus.failed
                               ? AppColors.error
                               : c.text,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      decoration: status == 'success'
+                      decoration: status == TaskStatus.success
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
                       decorationColor: c.textMuted,

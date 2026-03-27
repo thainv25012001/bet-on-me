@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from app.models.subscription import Subscription
 from app.repositories.base import BaseRepository
+from app.utils.constants import SubscriptionStatus
 
 
 class SubscriptionRepository(BaseRepository[Subscription]):
@@ -16,7 +17,7 @@ class SubscriptionRepository(BaseRepository[Subscription]):
         result = await self.db.execute(
             select(Subscription)
             .options(joinedload(Subscription.plan))
-            .where(Subscription.user_id == user_id, Subscription.status == "active")
+            .where(Subscription.user_id == user_id, Subscription.status == SubscriptionStatus.ACTIVE)
             .order_by(Subscription.created_at.desc())
             .limit(1)
         )

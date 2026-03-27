@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:bet_on_me/core/constants/app_status.dart';
 import 'package:bet_on_me/core/errors/app_error_messages.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
+import 'package:bet_on_me/core/widgets/app_dialog.dart';
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
 
 enum _PlanMode { deadline, freeTime }
@@ -151,7 +153,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       final job = await _goalService.generateGoal(
         goalId,
         hoursPerDay: double.parse(_hoursController.text),
-        mode: _mode == _PlanMode.deadline ? 'duration' : 'hours',
+        mode: _mode == _PlanMode.deadline ? PlanMode.duration : PlanMode.hours,
       );
 
       if (!mounted) return;
@@ -164,12 +166,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppErrorMessages.fromException(e)),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      showErrorDialog(context, AppErrorMessages.fromException(e));
     }
   }
 

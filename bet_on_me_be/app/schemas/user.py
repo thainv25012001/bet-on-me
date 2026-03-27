@@ -12,6 +12,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     name: str | None = None
     avatar_url: str | None = None
+    timezone: str | None = None
 
 
 class UserOut(BaseModel):
@@ -19,6 +20,7 @@ class UserOut(BaseModel):
     email: str
     name: str | None
     avatar_url: str | None
+    timezone: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -4,6 +4,7 @@ from sqlalchemy import Text, Integer, Date, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import UUIDBase
+from app.utils.constants import TaskStatus
 
 
 class Task(UUIDBase):
@@ -19,6 +20,6 @@ class Task(UUIDBase):
     explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
     guide: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     estimated_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    status: Mapped[str] = mapped_column(Text, default="pending", nullable=False, server_default="pending")
+    status: Mapped[str] = mapped_column(Text, default=TaskStatus.PENDING, nullable=False, server_default=TaskStatus.PENDING)
 
     plan: Mapped["Plan"] = relationship("Plan", back_populates="tasks")  # noqa: F821

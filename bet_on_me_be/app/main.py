@@ -8,6 +8,7 @@ from app.utils.exceptions import AppException
 from app.schemas.common import error_response
 from app.kafka.producer import start_producer, stop_producer
 from app.kafka.consumer import start_consumer
+from app.scheduler import start_goal_evaluator
 from app.api.v1.routers import auth, users, goals, plans, tasks, stakes, payments, subscriptions, admin, ws
 
 logger = logging.getLogger(__name__)
@@ -25,9 +26,17 @@ async def lifespan(app: FastAPI):
 
     consumer_task.add_done_callback(_on_consumer_done)
 
+    evaluator_task = await start_goal_evaluator()
+
     yield
 
     # ── Shutdown ─────────────────────────────────────────────────────────────
+    evaluator_task.cancel()
+    try:
+        await evaluator_task
+    except asyncio.CancelledError:
+        pass
+
     consumer_task.cancel()
     try:
         await consumer_task

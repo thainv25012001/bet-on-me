@@ -4,6 +4,7 @@ from sqlalchemy import Text, Integer, DateTime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import UUIDBase
+from app.utils.constants import JobStatus
 
 
 class GoalJob(UUIDBase):
@@ -15,9 +16,8 @@ class GoalJob(UUIDBase):
     # Full GoalCreate payload serialised as JSON so the consumer needs no extra context.
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
-    # "pending" | "processing" | "success" | "failed"
     status: Mapped[str] = mapped_column(
-        Text, default="pending", nullable=False, index=True
+        Text, default=JobStatus.PENDING, nullable=False, index=True
     )
 
     # Filled on success by the consumer.

@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import UUIDBase
+from app.utils.constants import SubscriptionStatus
 
 
 class Subscription(UUIDBase):
@@ -17,7 +18,7 @@ class Subscription(UUIDBase):
     plan_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("subscription_plans.id"), nullable=False
     )
-    status: Mapped[str] = mapped_column(Text, default="active", nullable=False)
+    status: Mapped[str] = mapped_column(Text, default=SubscriptionStatus.ACTIVE, nullable=False)
     started_at: Mapped[date] = mapped_column(Date, nullable=False)
     expires_at: Mapped[date] = mapped_column(Date, nullable=False)
     price_paid: Mapped[int | None] = mapped_column(Integer, nullable=True)

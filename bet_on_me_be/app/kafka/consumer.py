@@ -20,6 +20,7 @@ from app.schemas.goal import GoalGenerateRequest
 from app.services.goal_service import _generate_tasks
 from app.services.subscription_service import SubscriptionService
 from app.utils import error_codes as ec
+from app.utils.constants import GoalMode, JobStatus, PlanGeneratedBy
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +70,11 @@ async def _process_message(msg) -> None:
     user_id: uuid.UUID | None = None
     async with AsyncSessionLocal() as db:
         job = await db.get(GoalJob, job_uuid)
-        if job is None or job.status != "pending":
+        if job is None or job.status != JobStatus.PENDING:
             # Duplicate delivery or already handled — skip.
             return
         user_id = job.user_id
-        job.status = "processing"
+        job.status = JobStatus.PROCESSING
         job.started_at = datetime.utcnow()
         await db.commit()
 
@@ -93,7 +94,7 @@ async def _process_message(msg) -> None:
 
         duration = (
             (goal_target_date - goal_start_date).days
-            if gen_data.mode == "duration"
+            if gen_data.mode == GoalMode.DURATION
             else None
         )
         result = await _generate_tasks(
@@ -105,7 +106,7 @@ async def _process_message(msg) -> None:
         )
         total_days = result["total_days"]
         real_target_date = (
-            goal_target_date if gen_data.mode == "duration"
+            goal_target_date if gen_data.mode == GoalMode.DURATION
             else goal_start_date + timedelta(days=total_days)
         )
     except OpenAIRateLimitError:
@@ -132,13 +133,13 @@ async def _process_message(msg) -> None:
             goal = await db.get(Goal, job.goal_id)
 
             # Update target_date when AI determined real duration (hours mode).
-            if gen_data.mode == "hours":
+            if gen_data.mode == GoalMode.HOURS:
                 goal.target_date = real_target_date
 
             plan = Plan(
                 goal_id=goal.id,
                 total_days=total_days,
-                generated_by="ai",
+                generated_by=PlanGeneratedBy.AI,
                 overview=result.get("overview"),
                 hours_per_day=gen_data.hours_per_day,
             )
@@ -159,7 +160,7 @@ async def _process_message(msg) -> None:
                     estimated_minutes=item.get("estimated_minutes"),
                 ))
 
-            job.status = "success"
+            job.status = JobStatus.SUCCESS
             job.completed_at = datetime.utcnow()
             await db.commit()
 
@@ -187,7 +188,7 @@ async def _mark_failed(
             )
             job = result.scalar_one_or_none()
             if job:
-                job.status = "failed"
+                job.status = JobStatus.FAILED
                 job.error_message = error[:1000]   # raw message stored for ops, never shown to users
                 job.completed_at = datetime.utcnow()
                 await db.commit()

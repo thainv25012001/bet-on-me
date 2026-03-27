@@ -9,6 +9,7 @@ from app.models.user import User
 from app.repositories.subscription_plan_repository import SubscriptionPlanRepository
 from app.repositories.subscription_repository import SubscriptionRepository
 from app.schemas.subscription import PlanDiscountUpdate, SubscriptionCreate
+from app.utils.constants import SubscriptionStatus
 from app.utils.exceptions import BadRequest, NotFound
 
 
@@ -28,7 +29,7 @@ class SubscriptionService:
         # Cancel any existing active subscription
         existing = await self.repo.get_active_by_user(user.id)
         if existing:
-            await self.repo.update(existing, status="cancelled")
+            await self.repo.update(existing, status=SubscriptionStatus.CANCELLED)
 
         # Apply active discount if any
         today = data.started_at
@@ -48,7 +49,7 @@ class SubscriptionService:
         sub = await self.repo.create(
             user_id=user.id,
             plan_id=plan.id,
-            status="active",
+            status=SubscriptionStatus.ACTIVE,
             started_at=data.started_at,
             expires_at=expires_at,
             price_paid=price_paid,
@@ -65,7 +66,7 @@ class SubscriptionService:
         sub = await self.repo.get_active_by_user(user.id)
         if not sub:
             raise BadRequest("No active subscription to cancel")
-        await self.repo.update(sub, status="cancelled")
+        await self.repo.update(sub, status=SubscriptionStatus.CANCELLED)
 
     async def update_plan_discount(
         self, tier: str, data: PlanDiscountUpdate
@@ -86,3 +87,9 @@ class SubscriptionService:
         if subscription is None or subscription.plan is None:
             return 7  # free tier default
         return subscription.plan.max_plan_days
+
+    @staticmethod
+    def get_goal_limit_for_subscription(subscription: Subscription | None) -> int:
+        if subscription is None or subscription.plan is None:
+            return 2  # free tier default
+        return subscription.plan.total_goal_limit

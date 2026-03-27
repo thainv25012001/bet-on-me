@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:bet_on_me/core/constants/app_status.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 
 /// Draggable bottom sheet that shows full task detail — description,
@@ -25,8 +26,8 @@ class TaskDetailSheet extends StatelessWidget {
     final description = task['description'] as String?;
     final explanation = task['explanation'] as String?;
     final minutes = (task['estimated_minutes'] as num?)?.toInt();
-    final status = task['status'] as String? ?? 'pending';
-    final isDone = status == 'success';
+    final status = task['status'] as String? ?? TaskStatus.pending;
+    final isDone = status == TaskStatus.success;
     final rawGuide = task['guide'] as List<dynamic>? ?? [];
 
     return DraggableScrollableSheet(
@@ -200,8 +201,8 @@ class TaskStatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDone = status == 'success';
-    final isFailed = status == 'failed';
+    final isDone = status == TaskStatus.success;
+    final isFailed = status == TaskStatus.failed;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
       width: 22,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:bet_on_me/core/constants/app_status.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
+import 'package:bet_on_me/core/widgets/app_dialog.dart';
 import 'package:bet_on_me/core/widgets/task_detail_sheet.dart';
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
 
@@ -39,11 +41,11 @@ class _TaskItem {
     this.explanation,
     this.guide = const [],
     this.estimatedMinutes,
-    this.status = 'pending',
+    this.status = TaskStatus.pending,
   });
 
-  bool get isDone => status == 'success';
-  bool get isFailed => status == 'failed';
+  bool get isDone => status == TaskStatus.success;
+  bool get isFailed => status == TaskStatus.failed;
 }
 
 class _GoalDay {
@@ -114,7 +116,7 @@ class _DailyTasksPageState extends State<DailyTasksPage> {
               .map((s) => _GuideStep.fromMap(s as Map<String, dynamic>))
               .toList(),
           estimatedMinutes: (t['estimated_minutes'] as num?)?.toInt(),
-          status: t['status'] as String? ?? 'pending',
+          status: t['status'] as String? ?? TaskStatus.pending,
         ));
       }
       setState(() {
@@ -132,18 +134,13 @@ class _DailyTasksPageState extends State<DailyTasksPage> {
   Future<void> _toggleTask(_TaskItem task) async {
     if (task.isDone) return;
     final prev = task.status;
-    setState(() => task.status = 'success');
+    setState(() => task.status = TaskStatus.success);
     try {
-      await _goalService.updateTaskStatus(task.id, 'success');
+      await _goalService.updateTaskStatus(task.id, TaskStatus.success);
     } catch (e) {
       setState(() => task.status = prev);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not save: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        showErrorDialog(context, 'Could not update task. Please try again.');
       }
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 import 'package:bet_on_me/core/services/api_client.dart';
+import 'package:bet_on_me/core/widgets/app_dialog.dart';
 import 'package:bet_on_me/features/auth/data/auth_service.dart';
 import 'package:bet_on_me/features/auth/presentation/widgets/auth_header.dart';
 import 'package:bet_on_me/features/auth/presentation/widgets/auth_text_field.dart';
@@ -157,17 +158,10 @@ class _SignInScreenState extends State<SignInScreen> {
                               );
                             } on ApiException catch (e) {
                               if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(e.message),
-                                  backgroundColor: Colors.red.shade700,
-                                ),
-                              );
+                              showErrorDialog(context, e.message);
                             } catch (_) {
                               if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Network error.')),
-                              );
+                              showErrorDialog(context, 'Network error. Please try again.');
                             } finally {
                               if (mounted) setState(() => _isLoading = false);
                             }

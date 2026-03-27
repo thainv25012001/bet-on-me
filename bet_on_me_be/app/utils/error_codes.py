@@ -33,6 +33,7 @@ FORBIDDEN               = _ErrorCode("FORBIDDEN",               403, "Access den
 # ── Goal / Plan ───────────────────────────────────────────────────────────────
 GOAL_NOT_FOUND          = _ErrorCode("GOAL_NOT_FOUND",          404, "Goal not found.")
 JOB_NOT_FOUND           = _ErrorCode("JOB_NOT_FOUND",           404, "Goal creation job not found.")
+GOAL_LIMIT_REACHED      = _ErrorCode("GOAL_LIMIT_REACHED",      403, "Goal limit for your subscription tier has been reached.")
 AI_SERVICE_ERROR        = _ErrorCode("AI_SERVICE_ERROR",        503, "AI service unavailable.")
 AI_RESPONSE_INVALID     = _ErrorCode("AI_RESPONSE_INVALID",     502, "AI returned an unexpected response.")
 PLAN_GENERATION_FAILED  = _ErrorCode("PLAN_GENERATION_FAILED",  500, "Plan generation failed.")

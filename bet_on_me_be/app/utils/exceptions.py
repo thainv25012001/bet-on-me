@@ -80,6 +80,15 @@ class SubscriptionRequired(AppException):
         )
 
 
+class GoalLimitReached(AppException):
+    def __init__(self, limit: int) -> None:
+        super().__init__(
+            status_code=ec.GOAL_LIMIT_REACHED.http_status,
+            code=ec.GOAL_LIMIT_REACHED.code,
+            message=f"You have reached the {limit}-goal limit for your current plan.",
+        )
+
+
 class AiServiceError(AppException):
     def __init__(self) -> None:
         super().__init__(
