@@ -8,7 +8,7 @@ from app.utils.exceptions import AppException
 from app.schemas.common import error_response
 from app.kafka.producer import start_producer, stop_producer
 from app.kafka.consumer import start_consumer
-from app.api.v1.routers import auth, users, goals, plans, tasks, stakes, payments, subscriptions, admin
+from app.api.v1.routers import auth, users, goals, plans, tasks, stakes, payments, subscriptions, admin, ws
 
 logger = logging.getLogger(__name__)
 
@@ -80,3 +80,4 @@ app.include_router(stakes.router, prefix=PREFIX)
 app.include_router(payments.router, prefix=PREFIX)
 app.include_router(subscriptions.router, prefix=PREFIX)
 app.include_router(admin.router, prefix=PREFIX)
+app.include_router(ws.router)  # WebSocket routes — no /api/v1 prefix

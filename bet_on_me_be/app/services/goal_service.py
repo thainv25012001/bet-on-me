@@ -212,6 +212,15 @@ async def _generate_tasks(
     else:
         total_days = duration  # real full goal duration
 
+    # Server-side guard: verify every day from 1..plan_days has at least one task.
+    days_present = {item["day_number"] for item in tasks}
+    missing = [d for d in range(1, plan_days + 1) if d not in days_present]
+    if missing:
+        raise ValueError(
+            f"AI response is missing tasks for day(s) {missing} "
+            f"(plan_days={plan_days}). Raw: {content[:300]}"
+        )
+
     return {"overview": parsed.get("overview"), "tasks": tasks, "plan_days": plan_days, "total_days": total_days}
 
 
@@ -220,6 +229,9 @@ def _build_duration_prompt(title: str, full_duration: int, plan_days: int, hours
         f"Note: this is a {full_duration}-day goal but only the first {plan_days} days are being planned now."
         if plan_days < full_duration else ""
     )
+    t1 = min(90, daily_minutes // 3)
+    t2 = min(90, daily_minutes // 3)
+    t3 = daily_minutes - t1 - t2
     return f"""
 You are a productivity coach. Generate a structured daily plan for the following goal.
 
@@ -228,83 +240,68 @@ Full goal duration: {full_duration} days
 Available time per day: {hours_per_day} hours ({daily_minutes} minutes)
 {cap_note}
 
-Rules:
-- Generate tasks for day 1 through day {plan_days} ONLY. Do not generate tasks beyond day {plan_days}.
-- Every day from 1 to {plan_days} must have at least one task.
-- Each day's tasks should have a combined estimated_minutes roughly equal to {daily_minutes} minutes.
+RULES — read carefully before generating:
+1. Generate tasks for EVERY day from 1 to {plan_days}. The tasks array MUST contain at least one entry for each day_number 1, 2, 3 … {plan_days}. Skipping any day is an error.
+2. For each day, the SUM of estimated_minutes across that day's tasks MUST be between {int(daily_minutes * 0.85)} and {int(daily_minutes * 1.15)} minutes. Add multiple tasks to the same day to reach the budget — do NOT leave a day under-filled.
+3. Do not add any task with day_number > {plan_days}.
 
 Return a JSON object with exactly these two keys:
 - "overview": string (2-3 sentences summarising the overall strategy and milestones for the full {full_duration}-day goal)
-- "tasks": array of task objects
+- "tasks": array of ALL task objects for days 1 through {plan_days}
 
 Each task object must have exactly these fields:
-- "day_number": integer (1-based, between 1 and {plan_days})
+- "day_number": integer (1-based, 1 ≤ day_number ≤ {plan_days})
 - "title": string (short action title, max 10 words)
-- "description": string (1-2 sentence description of what the task involves)
-- "explanation": string (2-3 sentences explaining WHY this task is important for the goal and what benefit it brings)
-- "guide": array of step objects — a numbered step-by-step guide for completing this specific task.
-  Each step object has:
-    - "step": integer (1-based)
-    - "action": string (what to do in this step, clear and specific)
-    - "example": string (a concrete example of doing that action, tailored to the goal)
-- "estimated_minutes": integer (realistic time estimate for this specific task)
+- "description": string (1-2 sentences describing what the task involves)
+- "explanation": string (2-3 sentences explaining WHY this task matters for the goal)
+- "guide": array of step objects, each with "step" (int), "action" (string), "example" (string)
+- "estimated_minutes": integer (time for this single task)
 
-Example:
+Example structure — note how EACH day gets multiple tasks that together fill {daily_minutes} min:
 {{
-  "overview": "This plan progressively builds your skill over {full_duration} days by alternating between learning and practice sessions.",
+  "overview": "...",
   "tasks": [
-    {{
-      "day_number": 1,
-      "title": "Define your goal clearly",
-      "description": "Write down a specific, measurable version of your goal and identify the first obstacle.",
-      "explanation": "Clarity on your goal is the foundation of every successful plan. Without a precise target you will struggle to measure progress or stay motivated when things get hard.",
-      "guide": [
-        {{
-          "step": 1,
-          "action": "Open a blank document or notebook",
-          "example": "Open Notes on your phone or a fresh page in your journal"
-        }},
-        {{
-          "step": 2,
-          "action": "Write your goal using the SMART format (Specific, Measurable, Achievable, Relevant, Time-bound)",
-          "example": "Instead of 'get fit', write 'run 5 km without stopping by {full_duration} days from now'"
-        }},
-        {{
-          "step": 3,
-          "action": "List the single biggest obstacle you expect to face",
-          "example": "e.g. 'I tend to skip sessions when I feel tired after work'"
-        }}
-      ],
-      "estimated_minutes": 30
-    }}
+    {{"day_number": 1, "title": "Task A for day 1", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t1}}},
+    {{"day_number": 1, "title": "Task B for day 1", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t2}}},
+    {{"day_number": 1, "title": "Task C for day 1", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t3}}},
+    {{"day_number": 2, "title": "Task A for day 2", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t1}}},
+    {{"day_number": 2, "title": "Task B for day 2", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t2}}},
+    {{"day_number": 2, "title": "Task C for day 2", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t3}}},
+    "... continue this exact pattern for day 3, day 4, … day {plan_days}"
   ]
 }}
 
-Important: Return only the JSON object, no extra text.
+Before returning, verify: does every day_number from 1 to {plan_days} appear in the tasks array? If any day is missing, add its tasks before outputting.
+
+Return only the JSON object, no extra text.
 """
 
 
 def _build_hours_prompt(title: str, hours_per_day: float, daily_minutes: int, max_days: int) -> str:
+    t1 = min(90, daily_minutes // 3)
+    t2 = min(90, daily_minutes // 3)
+    t3 = daily_minutes - t1 - t2
     return f"""
 You are a productivity coach. A user wants to achieve the following goal and can commit
 {hours_per_day} hours ({daily_minutes} minutes) per day.
 
 Goal: {title}
 Available time per day: {hours_per_day} hours ({daily_minutes} minutes)
-Maximum tasks to generate: {max_days} days
+Maximum days to generate: {max_days}
 
 First, estimate the total number of days needed to fully achieve this goal at {hours_per_day} hours/day.
-Then generate tasks for the first {max_days} days only (or fewer if your estimate is less than {max_days}).
+Let N = min(your estimate, {max_days}).
+Then generate tasks for days 1 through N only.
 
-Rules:
-- Do not generate tasks beyond day {max_days}.
-- Every day from 1 to min(your estimate, {max_days}) must have at least one task.
-- Each day's tasks should have a combined estimated_minutes roughly equal to {daily_minutes} minutes.
+RULES — read carefully before generating:
+1. Generate tasks for EVERY day from 1 to N. The tasks array MUST contain at least one entry for each day_number 1, 2, 3 … N. Skipping any day is an error.
+2. For each day, the SUM of estimated_minutes across that day's tasks MUST be between {int(daily_minutes * 0.85)} and {int(daily_minutes * 1.15)} minutes. Add multiple tasks to the same day to reach the budget — do NOT leave a day under-filled.
+3. Do not add any task with day_number > {max_days}.
 
 Return a JSON object with exactly these three keys:
 - "estimated_total_days": integer — your estimate of the FULL days needed (can exceed {max_days})
 - "overview": string (2-3 sentences summarising the overall strategy for the full goal)
-- "tasks": array of task objects covering day 1 through min(estimated_total_days, {max_days})
+- "tasks": array of ALL task objects for days 1 through N
 
 Each task object must have exactly these fields:
 - "day_number": integer (1-based, must not exceed {max_days})
@@ -314,5 +311,22 @@ Each task object must have exactly these fields:
 - "guide": array of step objects with "step" (integer), "action" (string), "example" (string) keys
 - "estimated_minutes": integer (realistic time estimate for this specific task)
 
-Important: Return only the JSON object, no extra text.
+Example structure — note how EACH day gets multiple tasks that together fill {daily_minutes} min:
+{{
+  "estimated_total_days": 30,
+  "overview": "...",
+  "tasks": [
+    {{"day_number": 1, "title": "Task A for day 1", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t1}}},
+    {{"day_number": 1, "title": "Task B for day 1", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t2}}},
+    {{"day_number": 1, "title": "Task C for day 1", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t3}}},
+    {{"day_number": 2, "title": "Task A for day 2", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t1}}},
+    {{"day_number": 2, "title": "Task B for day 2", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t2}}},
+    {{"day_number": 2, "title": "Task C for day 2", "description": "...", "explanation": "...", "guide": [{{"step": 1, "action": "...", "example": "..."}}], "estimated_minutes": {t3}}},
+    "... continue this exact pattern for day 3, day 4, … day N"
+  ]
+}}
+
+Before returning, verify: does every day_number from 1 to N appear in the tasks array? If any day is missing, add its tasks before outputting.
+
+Return only the JSON object, no extra text.
 """

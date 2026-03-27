@@ -6,6 +6,7 @@ import 'package:bet_on_me/features/auth/data/auth_service.dart';
 import 'package:bet_on_me/features/auth/presentation/screens/change_password_screen.dart';
 import 'package:bet_on_me/features/auth/presentation/screens/signin_screen.dart';
 import 'package:bet_on_me/features/goals/data/goal_service.dart';
+import 'package:bet_on_me/features/goals/data/goal_ws_service.dart';
 import 'package:bet_on_me/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:bet_on_me/features/goals/presentation/screens/goal_detail_screen.dart';
 import 'package:bet_on_me/features/subscription/presentation/screens/subscription_screen.dart';
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final _authService = AuthService();
   final _goalService = GoalService();
+  final _wsService = GoalWsService();
   String _userName = '';
   List<Map<String, dynamic>> _goals = [];
   bool _goalsLoading = true;
@@ -32,7 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _pendingJob;
   int _pendingElapsed = 0;
   String? _pendingJobError;
-  Timer? _pollTimer;
+  StreamSubscription<Map<String, dynamic>>? _jobSub;
+  Timer? _elapsedTimer;
 
   @override
   void initState() {
@@ -43,7 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _pollTimer?.cancel();
+    _jobSub?.cancel();
+    _elapsedTimer?.cancel();
+    _wsService.close();
     super.dispose();
   }
 
@@ -91,48 +96,81 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => CreateGoalScreen(key: UniqueKey())),
     );
     if (result != null && mounted) {
-      _startJobPolling(result);
+      _startJobWatch(result);
     }
   }
 
-  void _startJobPolling(Map<String, dynamic> job) {
+  Future<void> _startJobWatch(Map<String, dynamic> job) async {
+    final jobId = job['job_id'] as String? ?? '';
     setState(() {
       _pendingJob = job;
       _pendingElapsed = 0;
       _pendingJobError = null;
     });
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => _pollPendingJob(),
-    );
+
+    // Tick elapsed time locally so the progress bar moves smoothly.
+    _elapsedTimer?.cancel();
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _pendingJob != null) {
+        setState(() => _pendingElapsed++);
+      }
+    });
+
+    try {
+      final stream = await _wsService.watchJob(jobId);
+      _jobSub = stream.listen(
+        _onJobMessage,
+        onError: (_) => _fallbackPoll(jobId),
+        cancelOnError: true,
+      );
+    } catch (_) {
+      // WS connect failed immediately — fall back to a single HTTP poll.
+      _fallbackPoll(jobId);
+    }
   }
 
-  Future<void> _pollPendingJob() async {
-    final jobId = _pendingJob?['job_id'] as String?;
-    if (jobId == null) return;
+  void _onJobMessage(Map<String, dynamic> payload) {
+    _jobSub?.cancel();
+    _elapsedTimer?.cancel();
+    _wsService.close();
+    if (!mounted) return;
+
+    final status = payload['status'] as String? ?? '';
+    if (status == 'success') {
+      setState(() {
+        _pendingJob = null;
+        _pendingJobError = null;
+      });
+      _loadGoals();
+    } else {
+      setState(() {
+        _pendingJobError =
+            payload['error_message'] as String? ?? 'Goal creation failed.';
+      });
+    }
+  }
+
+  Future<void> _fallbackPoll(String jobId) async {
     try {
       final status = await _goalService.pollJob(jobId);
       if (!mounted) return;
       final jobStatus = status['status'] as String? ?? 'pending';
-      final elapsed = status['elapsed_seconds'] as int? ?? 0;
       if (jobStatus == 'success') {
-        _pollTimer?.cancel();
+        _elapsedTimer?.cancel();
         setState(() {
           _pendingJob = null;
           _pendingJobError = null;
         });
         await _loadGoals();
       } else if (jobStatus == 'failed') {
-        _pollTimer?.cancel();
+        _elapsedTimer?.cancel();
         setState(() {
-          _pendingElapsed = elapsed;
+          _pendingElapsed = status['elapsed_seconds'] as int? ?? _pendingElapsed;
           _pendingJobError =
               status['error_message'] as String? ?? 'Goal creation failed.';
         });
-      } else {
-        setState(() => _pendingElapsed = elapsed);
       }
+      // If still pending, leave the card showing — user can dismiss manually.
     } catch (_) {}
   }
 

@@ -8,6 +8,7 @@ from aiokafka import AIOKafkaConsumer
 from sqlalchemy import select
 
 from app.core.config import settings
+from app.core.ws_manager import ws_manager
 from app.db.session import AsyncSessionLocal
 from app.models.goal_job import GoalJob
 from app.models.goal import Goal
@@ -147,6 +148,11 @@ async def _process_message(msg) -> None:
             await db.commit()
 
         logger.info("Job %s completed — goal %s created", job_id_str, goal.id)
+        await ws_manager.notify(job_id_str, {
+            "status": "success",
+            "job_id": job_id_str,
+            "goal_id": str(goal.id),
+        })
 
     except Exception as e:
         logger.exception("DB write failed for job %s", job_id_str)
@@ -165,5 +171,10 @@ async def _mark_failed(job_uuid: uuid.UUID, error: str) -> None:
                 job.error_message = error[:1000]
                 job.completed_at = datetime.utcnow()
                 await db.commit()
+                await ws_manager.notify(str(job_uuid), {
+                    "status": "failed",
+                    "job_id": str(job_uuid),
+                    "error_message": job.error_message,
+                })
     except Exception:
         logger.exception("Could not mark job %s as failed", job_uuid)
