@@ -129,8 +129,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   ),
                   Text(
                     '\$$totalCommitted',
-                    style: const TextStyle(
-                      color: AppColors.gold,
+                    style: TextStyle(
+                      color: c.text,
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
                     ),
@@ -173,11 +173,11 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   child: FilledButton(
                     onPressed: () => Navigator.pop(ctx, true),
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.gold,
-                      foregroundColor: Colors.black,
+                      backgroundColor: c.isDark ? AppColors.white : AppColors.nikeBlack,
+                      foregroundColor: c.isDark ? AppColors.nikeBlack : AppColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(30),
                       ),
                     ),
                     child: const Text(
@@ -251,7 +251,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             child: const Text(
               'Delete',
               style: TextStyle(
-                color: AppColors.error,
+                color: AppColors.nikeRed,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -348,13 +348,13 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.goldDim,
+                        color: AppColors.streakOrange,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
                         'TODAY',
                         style: TextStyle(
-                          color: AppColors.gold,
+                          color: AppColors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,
@@ -405,7 +405,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   Widget build(BuildContext context) {
     final c = AppThemeColors.of(context);
     return Scaffold(
-      backgroundColor: c.bg,
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: c.text),
@@ -428,7 +427,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                  color: AppColors.error,
+                  color: AppColors.nikeRed,
                   strokeWidth: 2,
                 ),
               ),
@@ -437,7 +436,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             IconButton(
               icon: const Icon(
                 Icons.delete_outline,
-                color: AppColors.error,
+                color: AppColors.nikeRed,
               ),
               tooltip: 'Delete goal',
               onPressed: _confirmDelete,
@@ -445,8 +444,10 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         ],
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.gold),
+          ? Center(
+              child: CircularProgressIndicator(
+                color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+              ),
             )
           : _currentStatus == GoalStatus.draft
               ? Center(
@@ -527,23 +528,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gold.withAlpha(120)),
-        boxShadow: c.isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: c.cardShadow,
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.lock_outline, color: AppColors.gold, size: 18),
+              Icon(Icons.lock_outline, color: c.text, size: 18),
               const SizedBox(width: 8),
               Text(
                 'Goal Locked',
@@ -571,19 +563,19 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             child: FilledButton(
               onPressed: _unlocking ? null : _unlock,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.gold,
-                foregroundColor: Colors.black,
+                backgroundColor: c.isDark ? AppColors.white : AppColors.nikeBlack,
+                foregroundColor: c.isDark ? AppColors.nikeBlack : AppColors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(30),
                 ),
               ),
               child: _unlocking
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                        color: Colors.black,
+                        color: c.isDark ? AppColors.nikeBlack : AppColors.white,
                         strokeWidth: 2,
                       ),
                     )
@@ -615,18 +607,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: BorderRadius.circular(16),
-            border: c.isDark
-                ? Border.all(color: c.border)
-                : null,
-            boxShadow: c.isDark
-                ? null
-                : [
-                    BoxShadow(
-                      color: c.cardShadow,
-                      blurRadius: 12,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+            border: Border.all(color: c.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -650,14 +631,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       children: [
                         const Icon(
                           Icons.schedule,
-                          color: AppColors.gold,
+                          color: AppColors.streakOrange,
                           size: 14,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${_hoursPerDay!.toStringAsFixed(_hoursPerDay! % 1 == 0 ? 0 : 1)} hrs/day',
                           style: const TextStyle(
-                            color: AppColors.gold,
+                            color: AppColors.streakOrange,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -683,7 +664,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     backgroundColor: c.border,
                     valueColor:
                         const AlwaysStoppedAnimation<Color>(
-                            AppColors.gold),
+                            AppColors.streakOrange),
                   ),
                 ),
               ),
@@ -709,34 +690,23 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             decoration: BoxDecoration(
               color: c.surface,
               borderRadius: BorderRadius.circular(16),
-              border: c.isDark
-                  ? Border.all(color: c.border)
-                  : null,
-              boxShadow: c.isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: c.cardShadow,
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+              border: Border.all(color: c.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(
                       Icons.map_outlined,
-                      color: AppColors.gold,
+                      color: c.textMuted,
                       size: 15,
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Text(
                       'PLAN OVERVIEW',
                       style: TextStyle(
-                        color: AppColors.gold,
+                        color: c.textMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
@@ -846,31 +816,20 @@ class _DayRow extends StatelessWidget {
             horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isToday
-              ? AppColors.goldDim
+              ? AppColors.streakOrange.withAlpha(15)
               : isPastMissed
-                  ? const Color(0x14FF3B30)
+                  ? AppColors.nikeRed.withAlpha(12)
                   : c.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isToday
-                ? AppColors.gold.withAlpha(160)
+                ? AppColors.streakOrange.withAlpha(160)
                 : isPastDone
                     ? c.border.withAlpha(80)
                     : isPastMissed
-                        ? AppColors.error.withAlpha(80)
-                        : c.isDark
-                            ? c.border
-                            : Colors.transparent,
+                        ? AppColors.nikeRed.withAlpha(80)
+                        : c.border,
           ),
-          boxShadow: (c.isDark || isToday)
-              ? null
-              : [
-                  BoxShadow(
-                    color: c.cardShadow,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
         ),
         child: Row(
           children: [
@@ -891,9 +850,9 @@ class _DayRow extends StatelessWidget {
                         'Day $day',
                         style: TextStyle(
                           color: isToday
-                              ? AppColors.gold
+                              ? AppColors.streakOrange
                               : isPastMissed
-                                  ? AppColors.error
+                                  ? AppColors.nikeRed
                                   : isPastDone
                                       ? c.textMuted
                                       : c.text,
@@ -907,14 +866,14 @@ class _DayRow extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.gold,
+                            color: AppColors.streakOrange,
                             borderRadius:
                                 BorderRadius.circular(4),
                           ),
                           child: const Text(
                             'TODAY',
                             style: TextStyle(
-                              color: Colors.black,
+                              color: AppColors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.5,
@@ -952,7 +911,7 @@ class _DayRow extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right,
-              color: isToday ? AppColors.gold : c.textMuted,
+              color: isToday ? AppColors.streakOrange : c.textMuted,
               size: 18,
             ),
           ],
@@ -985,20 +944,20 @@ class _DayBadge extends StatelessWidget {
       height: 36,
       decoration: BoxDecoration(
         color: isToday
-            ? AppColors.gold
+            ? AppColors.streakOrange
             : isPastDone
-                ? AppColors.successDim
+                ? AppColors.successGreen.withAlpha(20)
                 : isPastMissed
-                    ? const Color(0x20FF3B30)
+                    ? AppColors.nikeRed.withAlpha(15)
                     : c.surfaceVariant,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isToday
-              ? AppColors.gold
+              ? AppColors.streakOrange
               : isPastDone
-                  ? AppColors.success
+                  ? AppColors.successGreen
                   : isPastMissed
-                      ? AppColors.error
+                      ? AppColors.nikeRed
                       : c.border,
         ),
       ),
@@ -1006,19 +965,19 @@ class _DayBadge extends StatelessWidget {
         child: isPastDone
             ? const Icon(
                 Icons.check,
-                color: AppColors.success,
+                color: AppColors.successGreen,
                 size: 16,
               )
             : isPastMissed
                 ? const Icon(
                     Icons.close,
-                    color: AppColors.error,
+                    color: AppColors.nikeRed,
                     size: 16,
                   )
                 : Text(
                     '$day',
                     style: TextStyle(
-                      color: isToday ? Colors.black : c.text,
+                      color: isToday ? AppColors.white : c.text,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
@@ -1053,16 +1012,16 @@ class _DayTaskCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: status == TaskStatus.success
-              ? AppColors.successDim
+              ? AppColors.successGreen.withAlpha(20)
               : status == TaskStatus.failed
-                  ? const Color(0x22EF4444)
+                  ? AppColors.nikeRed.withAlpha(15)
                   : c.bg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: status == TaskStatus.success
-                ? AppColors.success
+                ? AppColors.successGreen.withAlpha(100)
                 : status == TaskStatus.failed
-                    ? AppColors.error
+                    ? AppColors.nikeRed.withAlpha(80)
                     : c.border,
           ),
         ),
@@ -1081,7 +1040,7 @@ class _DayTaskCard extends StatelessWidget {
                       color: status == TaskStatus.success
                           ? c.textMuted
                           : status == TaskStatus.failed
-                              ? AppColors.error
+                              ? AppColors.nikeRed
                               : c.text,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -1117,13 +1076,13 @@ class _DayTaskCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.goldDim,
+                      color: AppThemeColors.of(context).surfaceVariant,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       '${minutes}m',
-                      style: const TextStyle(
-                        color: AppColors.gold,
+                      style: TextStyle(
+                        color: AppThemeColors.of(context).textMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),

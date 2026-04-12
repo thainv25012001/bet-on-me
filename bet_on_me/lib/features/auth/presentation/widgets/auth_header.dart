@@ -6,6 +6,7 @@ class AuthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
     return Center(
       child: Column(
         children: [
@@ -13,27 +14,27 @@ class AuthHeader extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: AppColors.goldDim,
+              color: AppColors.hoverGray,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.gold.withAlpha(80), width: 1),
+              border: Border.all(color: AppColors.borderSecondary),
             ),
-            child: const Icon(Icons.bolt_rounded, color: AppColors.gold, size: 38),
+            child: Icon(Icons.bolt_rounded, color: c.text, size: 38),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'BET ON ME',
             style: TextStyle(
-              color: Colors.white,
+              color: c.text,
               fontSize: 30,
               fontWeight: FontWeight.w800,
               letterSpacing: 3,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Commit. Execute. Win.',
             style: TextStyle(
-              color: AppColors.textMuted,
+              color: c.textMuted,
               fontSize: 14,
               letterSpacing: 1.2,
             ),

@@ -36,8 +36,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
+    final ctaText = c.isDark ? AppColors.nikeBlack : AppColors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -52,18 +54,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 44),
 
               // ── Form label ──────────────────────────────────────────
-              const Text(
+              Text(
                 'Create your account',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: c.text,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Start betting on yourself today.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                style: TextStyle(color: c.textMuted, fontSize: 13),
               ),
 
               const SizedBox(height: 28),
@@ -108,7 +110,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           _obscurePassword
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           size: 20,
                         ),
                         onPressed: () =>
@@ -127,63 +129,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 32),
 
               // ── CTA Button ──────────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () async {
-                          if (_formKey.currentState!.validate()) {
-                            setState(() => _isLoading = true);
-                            try {
-                              await _authService.register(
-                                name: _nameController.text.trim(),
-                                email: _emailController.text.trim(),
-                                password: _passwordController.text,
-                              );
-                              if (!mounted) return;
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                                (_) => false,
-                              );
-                            } on ApiException catch (e) {
-                              if (!mounted) return;
-                              showErrorDialog(context, e.message);
-                            } catch (_) {
-                              if (!mounted) return;
-                              showErrorDialog(context, 'Network error. Please try again.');
-                            } finally {
-                              if (mounted) setState(() => _isLoading = false);
-                            }
+              ElevatedButton(
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        if (_formKey.currentState!.validate()) {
+                          setState(() => _isLoading = true);
+                          try {
+                            await _authService.register(
+                              name: _nameController.text.trim(),
+                              email: _emailController.text.trim(),
+                              password: _passwordController.text,
+                            );
+                            if (!mounted) return;
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const HomeScreen(),
+                              ),
+                              (_) => false,
+                            );
+                          } on ApiException catch (e) {
+                            if (!mounted) return;
+                            showErrorDialog(context, e.message);
+                          } catch (_) {
+                            if (!mounted) return;
+                            showErrorDialog(
+                              context,
+                              'Network error. Please try again.',
+                            );
+                          } finally {
+                            if (mounted) setState(() => _isLoading = false);
                           }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: Colors.black,
-                    disabledBackgroundColor: AppColors.gold.withAlpha(100),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              color: Colors.black, strokeWidth: 2.5),
-                        )
-                      : const Text(
-                          'Create Account',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
+                        }
+                      },
+                child: _isLoading
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: ctaText,
+                          strokeWidth: 2.5,
                         ),
-                ),
+                      )
+                    : const Text('CREATE ACCOUNT'),
               ),
 
               const SizedBox(height: 24),
@@ -207,9 +196,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Already have an account? ',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                      style: TextStyle(color: c.textMuted, fontSize: 14),
                     ),
                     TextButton(
                       onPressed: () {
@@ -221,7 +210,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         );
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.gold,
+                        foregroundColor: c.text,
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         padding: EdgeInsets.zero,

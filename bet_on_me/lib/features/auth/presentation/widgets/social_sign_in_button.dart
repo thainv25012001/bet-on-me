@@ -8,19 +8,20 @@ class SocialSignInButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: 52,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: AppColors.border),
+          foregroundColor: c.text,
+          side: BorderSide(color: c.border, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(30),
           ),
         ),
-        icon: const Icon(Icons.g_mobiledata_rounded, size: 26, color: Colors.white),
+        icon: Icon(Icons.g_mobiledata_rounded, size: 26, color: c.text),
         label: const Text(
           'Continue with Google',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),

@@ -33,7 +33,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _emailController.text.trim(),
       );
       if (!mounted) return;
-      // In production the token is emailed. In dev it's returned directly.
       final token = data['reset_token'] as String?;
       if (token != null) {
         Navigator.pushReplacement(
@@ -43,9 +42,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         );
       } else {
-        _showInfo(
-          'Check your email for a reset link.',
-        );
+        _showInfo('Check your email for a reset link.');
       }
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -58,29 +55,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  void _showError(String message) {
-    showErrorDialog(context, message);
-  }
+  void _showError(String message) => showErrorDialog(context, message);
 
   void _showInfo(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.surface),
+      SnackBar(content: Text(message)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
+    final ctaText = c.isDark ? AppColors.nikeBlack : AppColors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new, color: c.text, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -96,30 +87,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: AppColors.goldDim,
+                  color: AppColors.hoverGray,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
-                  Icons.lock_reset,
-                  color: AppColors.gold,
-                  size: 28,
-                ),
+                child: Icon(Icons.lock_reset, color: c.text, size: 28),
               ),
 
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 'Forgot Password?',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: c.text,
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Enter your email and we\'ll send you a reset token.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.5),
+              Text(
+                "Enter your email and we'll send you a reset token.",
+                style: TextStyle(
+                  color: c.textMuted,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
               ),
 
               const SizedBox(height: 32),
@@ -141,38 +132,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
               const SizedBox(height: 32),
 
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: Colors.black,
-                    disabledBackgroundColor: AppColors.gold.withAlpha(100),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.black,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : const Text(
-                          'Send Reset Token',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                child: _isLoading
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: ctaText,
+                          strokeWidth: 2.5,
                         ),
-                ),
+                      )
+                    : const Text('SEND RESET TOKEN'),
               ),
             ],
           ),

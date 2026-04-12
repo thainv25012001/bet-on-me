@@ -14,7 +14,6 @@ class _SessionExpiredScreenState extends State<SessionExpiredScreen> {
   @override
   void initState() {
     super.initState();
-    // Clear the stored token so the next login starts fresh.
     AuthService().clearToken();
   }
 
@@ -28,8 +27,8 @@ class _SessionExpiredScreenState extends State<SessionExpiredScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
     return Scaffold(
-      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -41,15 +40,13 @@ class _SessionExpiredScreenState extends State<SessionExpiredScreen> {
                 width: 88,
                 height: 88,
                 decoration: BoxDecoration(
-                  color: const Color(0x22EF4444),
+                  color: AppColors.hoverGray,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: AppColors.error.withAlpha(80),
-                  ),
+                  border: Border.all(color: AppColors.borderSecondary),
                 ),
                 child: const Icon(
                   Icons.lock_clock_outlined,
-                  color: AppColors.error,
+                  color: AppColors.nikeRed,
                   size: 44,
                 ),
               ),
@@ -57,10 +54,10 @@ class _SessionExpiredScreenState extends State<SessionExpiredScreen> {
               const SizedBox(height: 28),
 
               // Title
-              const Text(
+              Text(
                 'Session Expired',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: c.text,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -70,11 +67,11 @@ class _SessionExpiredScreenState extends State<SessionExpiredScreen> {
               const SizedBox(height: 12),
 
               // Body
-              const Text(
+              Text(
                 'Your login session has expired for security reasons. '
                 'Please sign in again to continue.',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: c.textMuted,
                   fontSize: 14,
                   height: 1.6,
                 ),
@@ -84,26 +81,9 @@ class _SessionExpiredScreenState extends State<SessionExpiredScreen> {
               const SizedBox(height: 40),
 
               // Back to login button
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _goToLogin,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Back to Login',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+              ElevatedButton(
+                onPressed: _goToLogin,
+                child: const Text('BACK TO LOGIN'),
               ),
             ],
           ),

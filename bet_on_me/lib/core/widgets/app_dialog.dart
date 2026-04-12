@@ -10,7 +10,7 @@ Future<void> showErrorDialog(BuildContext context, String message) {
     builder: (ctx) => AlertDialog(
       backgroundColor: c.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      icon: const Icon(Icons.error_outline, color: AppColors.error, size: 36),
+      icon: const Icon(Icons.error_outline, color: AppColors.nikeRed, size: 36),
       title: Text(
         'Something went wrong',
         textAlign: TextAlign.center,
@@ -30,11 +30,12 @@ Future<void> showErrorDialog(BuildContext context, String message) {
         FilledButton(
           onPressed: () => Navigator.pop(ctx),
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.error,
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.nikeRed,
+            foregroundColor: AppColors.white,
             minimumSize: const Size(120, 44),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
           ),
           child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w700)),
         ),

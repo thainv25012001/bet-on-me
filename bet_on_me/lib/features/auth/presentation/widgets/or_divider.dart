@@ -6,15 +6,18 @@ class OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
     return Row(
       children: [
-        const Expanded(child: Divider(color: AppColors.border)),
+        Expanded(child: Divider(color: c.border)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text('or',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+          child: Text(
+            'or',
+            style: TextStyle(color: c.textMuted, fontSize: 13),
+          ),
         ),
-        const Expanded(child: Divider(color: AppColors.border)),
+        Expanded(child: Divider(color: c.border)),
       ],
     );
   }

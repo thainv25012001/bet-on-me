@@ -52,10 +52,12 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: c.isDark
-              ? const ColorScheme.dark(
-                  primary: AppColors.gold, onPrimary: Colors.black)
-              : const ColorScheme.light(
-                  primary: AppColors.gold, onPrimary: Colors.black),
+              ? ColorScheme.dark(
+                  primary: AppColors.white,
+                  onPrimary: AppColors.nikeBlack)
+              : ColorScheme.light(
+                  primary: AppColors.nikeBlack,
+                  onPrimary: AppColors.white),
         ),
         child: child!,
       ),
@@ -73,10 +75,12 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: c.isDark
-              ? const ColorScheme.dark(
-                  primary: AppColors.gold, onPrimary: Colors.black)
-              : const ColorScheme.light(
-                  primary: AppColors.gold, onPrimary: Colors.black),
+              ? ColorScheme.dark(
+                  primary: AppColors.white,
+                  onPrimary: AppColors.nikeBlack)
+              : ColorScheme.light(
+                  primary: AppColors.nikeBlack,
+                  onPrimary: AppColors.white),
         ),
         child: child!,
       ),
@@ -104,7 +108,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(foregroundColor: AppColors.gold),
+            style: TextButton.styleFrom(foregroundColor: c.text),
             child: const Text('Got it',
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
@@ -178,10 +182,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   Widget build(BuildContext context) {
     final c = AppThemeColors.of(context);
     return Scaffold(
-      backgroundColor: c.bg,
       appBar: AppBar(
-        backgroundColor: c.bg,
-        elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: c.text, size: 20),
           onPressed: _isLoading ? null : () => Navigator.pop(context),
@@ -349,29 +350,18 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gold,
-                      foregroundColor: Colors.black,
-                      disabledBackgroundColor: AppColors.gold.withAlpha(120),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                    ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                                color: Colors.black, strokeWidth: 2.5),
+                              color: c.isDark
+                                  ? AppColors.nikeBlack
+                                  : AppColors.white,
+                              strokeWidth: 2.5,
+                            ),
                           )
-                        : const Text(
-                            'Create Goal',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5),
-                          ),
+                        : const Text('CREATE GOAL'),
                   ),
                 ),
 
@@ -422,28 +412,31 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: c.textMuted, fontSize: 15),
         filled: true,
-        fillColor: c.surface,
+        fillColor: AppColors.lightGray,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: c.border),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.borderSecondary),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: c.border),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.borderSecondary),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.gold),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+            width: 1.5,
+          ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.red.shade700),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.nikeRed),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.red.shade700),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.nikeRed, width: 1.5),
         ),
       ),
     );
@@ -524,7 +517,9 @@ class _ModeTab extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: active ? AppColors.gold : Colors.transparent,
+            color: active
+                ? (c.isDark ? AppColors.white : AppColors.nikeBlack)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -533,7 +528,9 @@ class _ModeTab extends StatelessWidget {
               Icon(
                 icon,
                 size: 16,
-                color: active ? Colors.black : c.textMuted,
+                color: active
+                    ? (c.isDark ? AppColors.nikeBlack : AppColors.white)
+                    : c.textMuted,
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -543,7 +540,9 @@ class _ModeTab extends StatelessWidget {
                     fontSize: 13,
                     fontWeight:
                         active ? FontWeight.w700 : FontWeight.w500,
-                    color: active ? Colors.black : c.textMuted,
+                    color: active
+                        ? (c.isDark ? AppColors.nikeBlack : AppColors.white)
+                        : c.textMuted,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -570,16 +569,16 @@ class _ModeHint extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.gold.withAlpha(20),
+        color: c.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gold.withAlpha(60)),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             isDeadline ? Icons.flag_outlined : Icons.auto_awesome_outlined,
-            color: AppColors.gold,
+            color: c.text,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -629,15 +628,6 @@ class _DatePickerRow extends StatelessWidget {
           color: c.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: c.border),
-          boxShadow: c.isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: c.cardShadow,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
         ),
         child: Row(
           children: [

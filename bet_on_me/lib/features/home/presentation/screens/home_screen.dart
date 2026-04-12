@@ -276,11 +276,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: AppColors.goldDim,
+                    backgroundColor: AppColors.hoverGray,
                     child: Text(
                       _initial,
-                      style: const TextStyle(
-                        color: AppColors.gold,
+                      style: TextStyle(
+                        color: c.text,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                       ),
@@ -361,8 +361,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       themeModeNotifier.value =
                           v ? ThemeMode.light : ThemeMode.dark;
                     },
-                    activeThumbColor: AppColors.gold,
-                    activeTrackColor: AppColors.goldDim,
+                    activeThumbColor: c.text,
+                    activeTrackColor: AppColors.hoverGray,
                   ),
                 );
               },
@@ -371,13 +371,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               leading: const Icon(
                 Icons.logout,
-                color: AppColors.error,
+                color: AppColors.nikeRed,
                 size: 20,
               ),
               title: const Text(
                 'Log Out',
                 style: TextStyle(
-                  color: AppColors.error,
+                  color: AppColors.nikeRed,
                   fontSize: 14,
                 ),
               ),
@@ -400,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: _loadGoals,
-        color: AppColors.gold,
+        color: c.isDark ? AppColors.white : AppColors.nikeBlack,
         backgroundColor: c.surface,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -518,9 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(40),
-                    child: CircularProgressIndicator(
-                      color: AppColors.gold,
-                    ),
+                    child: const CircularProgressIndicator(),
                   ),
                 )
               else ...[
@@ -614,21 +612,10 @@ class _GoalCreatingCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isFailed
-              ? AppColors.error.withAlpha(100)
-              : AppColors.gold.withAlpha(100),
+          color: isFailed ? AppColors.nikeRed : c.border,
         ),
-        boxShadow: c.isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: c.cardShadow,
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -653,14 +640,14 @@ class _GoalCreatingCard extends StatelessWidget {
                     horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isFailed
-                      ? AppColors.error.withAlpha(30)
-                      : AppColors.goldDim,
+                      ? AppColors.nikeRed.withAlpha(30)
+                      : AppColors.hoverGray,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   isFailed ? 'Failed' : 'Creating…',
                   style: TextStyle(
-                    color: isFailed ? AppColors.error : AppColors.gold,
+                    color: isFailed ? AppColors.nikeRed : AppColors.streakOrange,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -677,7 +664,7 @@ class _GoalCreatingCard extends StatelessWidget {
                 minHeight: 4,
                 backgroundColor: c.border,
                 valueColor:
-                    const AlwaysStoppedAnimation<Color>(AppColors.gold),
+                    const AlwaysStoppedAnimation<Color>(AppColors.streakOrange),
               ),
             ),
             const SizedBox(height: 8),
@@ -691,7 +678,7 @@ class _GoalCreatingCard extends StatelessWidget {
             Text(
               errorMessage!,
               style: TextStyle(
-                  color: AppColors.error.withAlpha(200), fontSize: 12),
+                  color: AppColors.nikeRed, fontSize: 12),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -705,15 +692,14 @@ class _GoalCreatingCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.goldDim,
+                        color: AppColors.hoverGray,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: AppColors.gold.withAlpha(80)),
+                        border: Border.all(color: AppColors.borderSecondary),
                       ),
                       child: const Text(
                         'Try Again',
                         style: TextStyle(
-                          color: AppColors.gold,
+                          color: AppColors.nikeBlack,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -771,18 +757,7 @@ class _DateBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: colors.isDark
-            ? Border.all(color: colors.border)
-            : null,
-        boxShadow: colors.isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: colors.cardShadow,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -829,18 +804,7 @@ class _MenuButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: colors.isDark
-              ? Border.all(color: colors.border)
-              : null,
-          boxShadow: colors.isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: colors.cardShadow,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          border: Border.all(color: colors.border),
         ),
         child: Icon(Icons.menu, color: colors.text, size: 20),
       ),
@@ -863,21 +827,19 @@ class _NewGoalButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(
             horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.goldDim,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.gold.withAlpha(80),
-          ),
+          color: AppColors.hoverGray,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: AppColors.borderSecondary),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, color: AppColors.gold, size: 14),
+            Icon(Icons.add, color: AppColors.nikeBlack, size: 14),
             SizedBox(width: 4),
             Text(
               'New goal',
               style: TextStyle(
-                color: AppColors.gold,
+                color: AppColors.nikeBlack,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -909,33 +871,9 @@ class _TodayFocusCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: c.isDark
-                ? [
-                    const Color(0xFF1F1400),
-                    const Color(0xFF0D0D1A),
-                  ]
-                : [
-                    AppColors.gold.withAlpha(28),
-                    AppColors.gold.withAlpha(8),
-                  ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: c.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.gold
-                .withAlpha(c.isDark ? 100 : 50),
-          ),
-          boxShadow: c.isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: AppColors.gold.withAlpha(18),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+          border: Border.all(color: c.border),
         ),
         child: Row(
           children: [
@@ -943,13 +881,12 @@ class _TodayFocusCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.gold
-                    .withAlpha(c.isDark ? 40 : 28),
+                color: AppColors.hoverGray,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
                 Icons.bolt,
-                color: AppColors.gold,
+                color: AppColors.streakOrange,
                 size: 26,
               ),
             ),
@@ -961,7 +898,7 @@ class _TodayFocusCard extends StatelessWidget {
                   const Text(
                     "TODAY'S FOCUS",
                     style: TextStyle(
-                      color: AppColors.gold,
+                      color: AppColors.streakOrange,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.8,
@@ -983,13 +920,12 @@ class _TodayFocusCard extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: AppColors.gold
-                    .withAlpha(c.isDark ? 30 : 20),
+                color: AppColors.hoverGray,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_forward,
-                color: AppColors.gold,
+                color: c.text,
                 size: 16,
               ),
             ),
@@ -1021,20 +957,7 @@ class _EmptyGoalsCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: colors.isDark
-              ? Border.all(
-                  color: AppColors.gold.withAlpha(50),
-                )
-              : null,
-          boxShadow: colors.isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: colors.cardShadow,
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+          border: Border.all(color: colors.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1043,12 +966,12 @@ class _EmptyGoalsCard extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: AppColors.goldDim,
+                color: AppColors.hoverGray,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
                 Icons.add_circle_outline,
-                color: AppColors.gold,
+                color: colors.text,
                 size: 32,
               ),
             ),
@@ -1115,10 +1038,10 @@ class _GoalListItem extends StatelessWidget {
     final isDraft = status == GoalStatus.draft;
     final isFailed = status == GoalStatus.failed;
     final statusColor = isCompleted
-        ? AppColors.success
+        ? AppColors.successGreen
         : isFailed
-            ? AppColors.error
-            : AppColors.gold;
+            ? AppColors.nikeRed
+            : AppColors.streakOrange;
 
     return GestureDetector(
       onTap: onTap,
@@ -1127,17 +1050,8 @@ class _GoalListItem extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: c.isDark ? Border.all(color: c.border) : null,
-          boxShadow: c.isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: c.cardShadow,
-                    blurRadius: 12,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: c.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1160,20 +1074,20 @@ class _GoalListItem extends StatelessWidget {
                 if (isCompleted)
                   _StatusBadge(
                     label: 'Done',
-                    color: AppColors.success,
-                    bgColor: AppColors.successDim,
+                    color: AppColors.successGreen,
+                    bgColor: AppColors.hoverGray,
                   )
                 else if (isFailed)
                   _StatusBadge(
                     label: 'Failed',
-                    color: AppColors.error,
-                    bgColor: AppColors.error.withAlpha(30),
+                    color: AppColors.nikeRed,
+                    bgColor: AppColors.nikeRed.withAlpha(30),
                   )
                 else if (isLocked)
                   _StatusBadge(
                     label: 'Locked',
-                    color: AppColors.gold,
-                    bgColor: AppColors.goldDim,
+                    color: AppColors.textSecondary,
+                    bgColor: AppColors.hoverGray,
                   )
                 else if (isDraft)
                   _StatusBadge(
@@ -1273,16 +1187,7 @@ class _StatsRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(20),
-        border: c.isDark ? Border.all(color: c.border) : null,
-        boxShadow: c.isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: c.cardShadow,
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+        border: Border.all(color: c.border),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -1292,15 +1197,15 @@ class _StatsRow extends StatelessWidget {
             _StatCell(
                 value: '$inProgress',
                 label: 'In Progress',
-                color: AppColors.gold),
+                color: AppColors.streakOrange),
             _VerticalDivider(color: c.border),
             _StatCell(
                 value: '$success',
                 label: 'Success',
-                color: AppColors.success),
+                color: AppColors.successGreen),
             _VerticalDivider(color: c.border),
             _StatCell(
-                value: '$failed', label: 'Failed', color: AppColors.error),
+                value: '$failed', label: 'Failed', color: AppColors.nikeRed),
           ],
         ),
       ),

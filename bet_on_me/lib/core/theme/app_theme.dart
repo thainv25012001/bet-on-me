@@ -1,140 +1,210 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_colors.dart';
+import 'app_typography.dart';
 
-/// Application theme definitions.
+/// Nike-inspired application theme.
+///
+/// Flat elevation model (no card shadows), pill-shaped buttons (30px radius),
+/// monochromatic UI with system Helvetica/Arial body font and
+/// Barlow Condensed display font.
 abstract final class AppTheme {
-  static ThemeData get dark  => _build(AppThemeColors.dark);
   static ThemeData get light => _build(AppThemeColors.light);
+  static ThemeData get dark  => _build(AppThemeColors.dark);
 
   static ThemeData _build(AppThemeColors c) {
     final isDark = c.isDark;
-    final brightness =
-        isDark ? Brightness.dark : Brightness.light;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
+
+    // CTA colors: black pill on light, white pill on dark.
+    final ctaBg   = isDark ? AppColors.white      : AppColors.nikeBlack;
+    final ctaText = isDark ? AppColors.nikeBlack  : AppColors.white;
 
     return ThemeData(
-      brightness: brightness,
+      brightness:              brightness,
       scaffoldBackgroundColor: c.bg,
-      extensions: [c],
+      extensions:              [c],
+
       colorScheme: ColorScheme(
-        brightness: brightness,
-        primary: AppColors.gold,
-        onPrimary: Colors.black,
-        secondary: AppColors.gold,
-        onSecondary: Colors.black,
-        error: AppColors.error,
-        onError: Colors.white,
-        surface: c.surface,
-        onSurface: c.text,
+        brightness:  brightness,
+        primary:     ctaBg,
+        onPrimary:   ctaText,
+        secondary:   AppColors.textSecondary,
+        onSecondary: c.text,
+        error:       AppColors.nikeRed,
+        onError:     AppColors.white,
+        surface:     c.surface,
+        onSurface:   c.text,
       ),
+
+      // ── AppBar ────────────────────────────────────────────────────────────
       appBarTheme: AppBarTheme(
-        backgroundColor: c.bg,
-        elevation: 0,
+        backgroundColor:      c.bg,
+        foregroundColor:      c.text,
+        elevation:            0,
         scrolledUnderElevation: 0,
         iconTheme: IconThemeData(color: c.text),
+        titleTextStyle: AppTypography.heading3(c.text),
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
       ),
+
+      // ── NavigationBar ─────────────────────────────────────────────────────
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: c.surface,
-        indicatorColor: AppColors.goldDim,
-        elevation: 0,
-        height: 68,
-        labelBehavior:
-            NavigationDestinationLabelBehavior.onlyShowSelected,
+        backgroundColor:  c.surface,
+        indicatorColor:   AppColors.hoverGray,
+        elevation:        0,
+        height:           68,
+        labelBehavior:    NavigationDestinationLabelBehavior.onlyShowSelected,
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
             color: states.contains(WidgetState.selected)
-                ? AppColors.gold
+                ? c.text
                 : c.textMuted,
             size: 22,
           ),
         ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => AppTypography.small(
+            states.contains(WidgetState.selected) ? c.text : c.textMuted,
+          ),
+        ),
       ),
+
+      // ── Elevated Button (primary CTA — pill shaped) ───────────────────────
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor:         ctaBg,
+          foregroundColor:         ctaText,
+          disabledBackgroundColor: AppColors.hoverGray,
+          disabledForegroundColor: AppColors.textDisabled,
+          elevation:    0,
+          shadowColor:  Colors.transparent,
+          minimumSize: const Size(double.infinity, 52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          textStyle: AppTypography.button(ctaText),
+        ),
+      ),
+
+      // ── Text Button (links, secondary actions) ────────────────────────────
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: c.text,
+          textStyle:       AppTypography.linkSmall(c.text),
+        ),
+      ),
+
+      // ── Outlined Button (secondary CTA) ──────────────────────────────────
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: c.text,
+          side: BorderSide(color: AppColors.borderSecondary, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          minimumSize: const Size(double.infinity, 52),
+          textStyle: AppTypography.button(c.text),
+        ),
+      ),
+
+      // ── Input Decoration ──────────────────────────────────────────────────
+      inputDecorationTheme: InputDecorationTheme(
+        filled:    true,
+        fillColor: AppColors.lightGray,
+        hintStyle: AppTypography.body(AppColors.textSecondary),
+        labelStyle: AppTypography.caption(AppColors.textSecondary),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.borderSecondary),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.borderSecondary),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.white : AppColors.nikeBlack,
+            width: 1.5,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.nikeRed),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(
+            color: AppColors.nikeRed,
+            width: 1.5,
+          ),
+        ),
+        errorStyle: AppTypography.small(AppColors.nikeRed),
+      ),
+
+      // ── Card ──────────────────────────────────────────────────────────────
+      cardTheme: CardThemeData(
+        color:     c.surface,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        margin:    EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+
+      // ── Drawer ────────────────────────────────────────────────────────────
       drawerTheme: DrawerThemeData(
         backgroundColor: c.surface,
         elevation: 0,
       ),
+
+      // ── Divider ───────────────────────────────────────────────────────────
       dividerTheme: DividerThemeData(
-        color: c.border,
+        color:     c.border,
         thickness: 1,
-        space: 1,
+        space:     1,
       ),
+
+      // ── Dialog ────────────────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
         backgroundColor: c.surface,
+        elevation:  0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: isDark
-              ? BorderSide(color: c.border)
-              : BorderSide.none,
+          side: BorderSide(color: c.border),
         ),
-        elevation: isDark ? 0 : 8,
-        shadowColor: c.cardShadow,
       ),
+
+      // ── SnackBar ──────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         backgroundColor: c.surfaceVariant,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        contentTextStyle: TextStyle(color: c.text),
+        contentTextStyle: AppTypography.body(c.text),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.gold,
+
+      // ── Progress Indicator ────────────────────────────────────────────────
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color:            isDark ? AppColors.white : AppColors.nikeBlack,
+        linearTrackColor: AppColors.hoverGray,
       ),
-      textTheme: TextTheme(
-        displayLarge: TextStyle(
-          color: c.text,
-          fontSize: 34,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.5,
-          height: 1.1,
-        ),
-        headlineMedium: TextStyle(
-          color: c.text,
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.3,
-        ),
-        titleLarge: TextStyle(
-          color: c.text,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.2,
-        ),
-        titleMedium: TextStyle(
-          color: c.text,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-        ),
-        bodyLarge: TextStyle(
-          color: c.text,
-          fontSize: 16,
-          height: 1.5,
-        ),
-        bodyMedium: TextStyle(
-          color: c.text,
-          fontSize: 14,
-          height: 1.5,
-        ),
-        bodySmall: TextStyle(
-          color: c.textMuted,
-          fontSize: 13,
-          height: 1.4,
-        ),
-        labelMedium: TextStyle(
-          color: c.textMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-        labelSmall: TextStyle(
-          color: c.textMuted,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-        ),
-      ),
+
+      // ── Text ──────────────────────────────────────────────────────────────
+      textTheme: AppTypography.buildTextTheme(c.text, c.textMuted),
+
+      // ── Focus ─────────────────────────────────────────────────────────────
+      focusColor: AppColors.focusRing,
     );
   }
 }

@@ -13,6 +13,7 @@ class TaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -20,8 +21,8 @@ class TaskItem extends StatelessWidget {
           Icon(
             task.isComplete ? Icons.check_circle : Icons.cancel,
             color: task.isComplete
-                ? const Color(0xFF4CAF50)
-                : const Color(0xFFF44336),
+                ? AppColors.successGreen
+                : AppColors.nikeRed,
             size: 18,
           ),
           const SizedBox(width: 8),
@@ -29,12 +30,12 @@ class TaskItem extends StatelessWidget {
             child: Text(
               task.title,
               style: TextStyle(
-                color: task.isComplete ? Colors.white : AppColors.textMuted,
+                color: task.isComplete ? c.textMuted : c.text,
                 fontSize: 13,
                 decoration: task.isComplete
                     ? TextDecoration.lineThrough
                     : TextDecoration.none,
-                decorationColor: AppColors.textMuted,
+                decorationColor: c.textMuted,
               ),
             ),
           ),

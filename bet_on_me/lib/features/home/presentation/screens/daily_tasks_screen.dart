@@ -213,17 +213,21 @@ class DailyTasksPageState extends State<DailyTasksPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
     if (_loading) {
-      return const Center(
-          child: CircularProgressIndicator(color: AppColors.gold));
+      return Center(
+        child: CircularProgressIndicator(
+          color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+        ),
+      );
     }
     if (_error != null) return _ErrorState(onRetry: _load);
     if (_goalDays.isEmpty) return const _EmptyState();
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.gold,
-      backgroundColor: AppThemeColors.of(context).surface,
+      color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+      backgroundColor: c.surface,
       child: CustomScrollView(
         slivers: [
           const SliverToBoxAdapter(child: _DailyHeader()),
@@ -324,9 +328,13 @@ class _SummaryCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: allDone ? AppColors.successDim : AppColors.goldDim,
+        color: allDone
+            ? AppColors.successGreen.withAlpha(20)
+            : AppThemeColors.of(context).surfaceVariant,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: allDone ? AppColors.success : AppColors.gold),
+        border: Border.all(
+          color: allDone ? AppColors.successGreen : AppThemeColors.of(context).border,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,7 +348,9 @@ class _SummaryCard extends StatelessWidget {
                 child: Text(
                   message,
                   style: TextStyle(
-                    color: allDone ? AppColors.success : AppColors.gold,
+                    color: allDone
+                        ? AppColors.successGreen
+                        : AppThemeColors.of(context).text,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -349,7 +359,9 @@ class _SummaryCard extends StatelessWidget {
               Text(
                 '$done / $total',
                 style: TextStyle(
-                  color: allDone ? AppColors.success : AppColors.gold,
+                  color: allDone
+                      ? AppColors.successGreen
+                      : AppColors.streakOrange,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),
@@ -368,7 +380,7 @@ class _SummaryCard extends StatelessWidget {
                 minHeight: 6,
                 backgroundColor: AppThemeColors.of(context).border,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                    allDone ? AppColors.success : AppColors.gold),
+                    allDone ? AppColors.successGreen : AppColors.streakOrange),
               ),
             ),
           ),
@@ -445,7 +457,7 @@ class _GoalSection extends StatelessWidget {
               minHeight: 3,
               backgroundColor: c.border,
               valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppColors.gold),
+                  const AlwaysStoppedAnimation<Color>(AppColors.streakOrange),
             ),
           ),
           const SizedBox(height: 10),
@@ -487,27 +499,18 @@ class _TaskCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: task.isDone
-              ? AppColors.successDim
+              ? AppColors.successGreen.withAlpha(20)
               : task.isFailed
-                  ? const Color(0x22EF4444)
+                  ? AppColors.nikeRed.withAlpha(15)
                   : c.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: task.isDone
-                ? AppColors.success
+                ? AppColors.successGreen.withAlpha(100)
                 : task.isFailed
-                    ? AppColors.error
+                    ? AppColors.nikeRed.withAlpha(80)
                     : c.border,
           ),
-          boxShadow: (c.isDark || task.isDone || task.isFailed)
-              ? null
-              : [
-                  BoxShadow(
-                    color: c.cardShadow,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,7 +530,7 @@ class _TaskCard extends StatelessWidget {
                       color: task.isDone
                           ? c.textMuted
                           : task.isFailed
-                              ? AppColors.error
+                              ? AppColors.nikeRed
                               : c.text,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -566,15 +569,13 @@ class _TaskCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: task.isDone
                           ? Colors.transparent
-                          : AppColors.goldDim,
+                          : c.surfaceVariant,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       '${task.estimatedMinutes}m',
                       style: TextStyle(
-                        color: task.isDone
-                            ? c.textMuted
-                            : AppColors.gold,
+                        color: c.textMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -624,11 +625,11 @@ class _EmptyState extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.goldDim,
+                color: AppColors.hoverGray,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(Icons.task_alt_outlined,
-                  color: AppColors.gold, size: 40),
+              child: Icon(Icons.task_alt_outlined,
+                  color: AppThemeColors.of(context).text, size: 40),
             ),
             const SizedBox(height: 20),
             Text(
@@ -725,9 +726,9 @@ class _DayCompleteSheetState extends State<_DayCompleteSheet> {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.goldDim,
+                color: c.surfaceVariant,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.gold.withAlpha(120)),
+                border: Border.all(color: c.border),
               ),
               child: Column(
                 children: [
@@ -738,8 +739,8 @@ class _DayCompleteSheetState extends State<_DayCompleteSheet> {
                   const SizedBox(height: 6),
                   Text(
                     '\$${widget.amount}',
-                    style: const TextStyle(
-                      color: AppColors.gold,
+                    style: TextStyle(
+                      color: c.text,
                       fontSize: 36,
                       fontWeight: FontWeight.w900,
                     ),
@@ -759,18 +760,19 @@ class _DayCompleteSheetState extends State<_DayCompleteSheet> {
                   ? FilledButton.icon(
                       onPressed: () => Navigator.pop(context),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success,
+                        backgroundColor: AppColors.successGreen,
+                        foregroundColor: AppColors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
                       icon: const Icon(Icons.check_circle_outline,
-                          color: Colors.white),
+                          color: AppColors.white),
                       label: const Text(
                         'Claimed!',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
@@ -779,19 +781,19 @@ class _DayCompleteSheetState extends State<_DayCompleteSheet> {
                   : FilledButton(
                       onPressed: _claiming ? null : _claim,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.gold,
-                        foregroundColor: Colors.black,
+                        backgroundColor: c.isDark ? AppColors.white : AppColors.nikeBlack,
+                        foregroundColor: c.isDark ? AppColors.nikeBlack : AppColors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
                       child: _claiming
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                color: Colors.black,
+                                color: c.isDark ? AppColors.nikeBlack : AppColors.white,
                                 strokeWidth: 2,
                               ),
                             )
@@ -832,7 +834,7 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: 16),
           TextButton(
             onPressed: onRetry,
-            style: TextButton.styleFrom(foregroundColor: AppColors.gold),
+            style: TextButton.styleFrom(foregroundColor: AppThemeColors.of(context).text),
             child: const Text('Try again'),
           ),
         ],

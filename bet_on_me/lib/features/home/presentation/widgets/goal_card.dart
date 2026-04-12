@@ -16,6 +16,7 @@ class GoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
     final completed = tasks.where((t) => t.isComplete).length;
     final total = tasks.length;
     final progress = total == 0 ? 0.0 : completed / total;
@@ -24,9 +25,9 @@ class GoalCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: c.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,24 +40,27 @@ class GoalCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: c.text,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
+              // Streak-orange badge — the gamification "product color"
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: AppColors.goldDim,
-                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.hoverGray,
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 child: Text(
                   '$completed/$total',
                   style: const TextStyle(
-                    color: AppColors.gold,
+                    color: AppColors.streakOrange,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -73,9 +77,10 @@ class GoalCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 4,
-              backgroundColor: AppColors.border,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppColors.gold),
+              backgroundColor: c.border,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.streakOrange,
+              ),
             ),
           ),
 

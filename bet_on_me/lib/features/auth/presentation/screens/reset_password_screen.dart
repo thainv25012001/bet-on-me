@@ -52,7 +52,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Password reset successfully. Please sign in.'),
-          backgroundColor: Colors.green,
         ),
       );
       Navigator.pushAndRemoveUntil(
@@ -73,17 +72,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
+    final ctaText = c.isDark ? AppColors.nikeBlack : AppColors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new, color: c.text, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -99,31 +94,27 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: AppColors.goldDim,
+                  color: AppColors.hoverGray,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
-                  Icons.lock_outline,
-                  color: AppColors.gold,
-                  size: 28,
-                ),
+                child: Icon(Icons.lock_outline, color: c.text, size: 28),
               ),
 
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 'Reset Password',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: c.text,
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Enter your reset token and choose a new password.',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: c.textMuted,
                   fontSize: 14,
                   height: 1.5,
                 ),
@@ -141,8 +132,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         controller: _tokenController,
                         label: 'Reset Token',
                         prefixIcon: Icons.vpn_key_outlined,
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Enter your reset token' : null,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Enter your reset token'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -157,7 +149,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           _obscurePassword
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           size: 20,
                         ),
                         onPressed: () =>
@@ -182,7 +174,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           _obscureConfirm
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           size: 20,
                         ),
                         onPressed: () =>
@@ -190,7 +182,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       ),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Confirm your password';
-                        if (v != _passwordController.text) return 'Passwords do not match';
+                        if (v != _passwordController.text) {
+                          return 'Passwords do not match';
+                        }
                         return null;
                       },
                     ),
@@ -200,38 +194,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
               const SizedBox(height: 32),
 
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: Colors.black,
-                    disabledBackgroundColor: AppColors.gold.withAlpha(100),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.black,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : const Text(
-                          'Reset Password',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                child: _isLoading
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: ctaText,
+                          strokeWidth: 2.5,
                         ),
-                ),
+                      )
+                    : const Text('RESET PASSWORD'),
               ),
             ],
           ),

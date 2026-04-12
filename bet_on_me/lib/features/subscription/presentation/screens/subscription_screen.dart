@@ -85,7 +85,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     final c = AppThemeColors.of(context);
     return Scaffold(
-      backgroundColor: c.bg,
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -146,13 +145,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         margin: const EdgeInsets.fromLTRB(20, 8, 20, 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.goldDim,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.gold.withAlpha(80)),
+          color: c.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: c.border),
         ),
         child: Row(
           children: [
-            const Icon(Icons.verified, color: AppColors.gold, size: 28),
+            Icon(Icons.verified, color: AppColors.successGreen, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -160,8 +159,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 children: [
                   Text(
                     'Active: ${_tierLabel(tier)}',
-                    style: const TextStyle(
-                      color: AppColors.gold,
+                    style: TextStyle(
+                      color: c.text,
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
@@ -169,7 +168,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   Text(
                     'Expires $expiresAt  •  ${status.toUpperCase()}',
                     style: TextStyle(
-                      color: AppColors.gold.withAlpha(180),
+                      color: c.textMuted,
                       fontSize: 12,
                     ),
                   ),
@@ -180,7 +179,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               onPressed: _cancel,
               child: const Text(
                 'Cancel',
-                style: TextStyle(color: AppColors.error, fontSize: 13),
+                style: TextStyle(color: AppColors.nikeRed, fontSize: 13),
               ),
             ),
           ],
@@ -259,7 +258,7 @@ class _PlanCard extends StatelessWidget {
     final isPro = tier == 'pro';
     final isAdvanced = tier == 'advanced';
     final accentColor =
-        isAdvanced ? AppColors.streak : (isPro ? AppColors.gold : c.textMuted);
+        isAdvanced ? AppColors.streakOrange : (isPro ? c.text : c.textMuted);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -268,20 +267,12 @@ class _PlanCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive
-              ? AppColors.gold
+              ? (c.isDark ? AppColors.white : AppColors.nikeBlack)
               : isAdvanced
-                  ? AppColors.streak.withAlpha(100)
+                  ? AppColors.streakOrange.withAlpha(100)
                   : c.border,
           width: isActive ? 2 : 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: c.cardShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -383,13 +374,13 @@ class _CardHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.successDim,
+              color: AppColors.hoverGray,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Text(
               'ACTIVE',
               style: TextStyle(
-                color: AppColors.success,
+                color: AppColors.successGreen,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1,
@@ -454,13 +445,13 @@ class _PriceRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.successDim,
+              color: AppColors.hoverGray,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               '-${discountPct!.toStringAsFixed(0)}%',
               style: const TextStyle(
-                color: AppColors.success,
+                color: AppColors.successGreen,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -484,7 +475,7 @@ class _FeatureRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, color: AppColors.success, size: 16),
+          const Icon(Icons.check_circle, color: AppColors.successGreen, size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -519,15 +510,15 @@ class _SubscribeButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: null,
           style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: AppColors.success),
+            side: const BorderSide(color: AppColors.successGreen),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(30),
             ),
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
           child: const Text(
             'Current Plan',
-            style: TextStyle(color: AppColors.success),
+            style: TextStyle(color: AppColors.successGreen),
           ),
         ),
       );
@@ -538,9 +529,9 @@ class _SubscribeButton extends StatelessWidget {
         onPressed: isLoading ? null : onSubscribe,
         style: ElevatedButton.styleFrom(
           backgroundColor: accentColor,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(30),
           ),
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 0,
@@ -551,7 +542,7 @@ class _SubscribeButton extends StatelessWidget {
                 width: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
               )
             : const Text(
@@ -583,7 +574,7 @@ class _CancelDialog extends StatelessWidget {
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, true),
-          style: TextButton.styleFrom(foregroundColor: AppColors.error),
+          style: TextButton.styleFrom(foregroundColor: AppColors.nikeRed),
           child: const Text('Cancel plan'),
         ),
       ],

@@ -41,10 +41,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password changed successfully.'),
-          backgroundColor: Colors.green,
-        ),
+        const SnackBar(content: Text('Password changed successfully.')),
       );
       Navigator.pop(context);
     } on ApiException catch (e) {
@@ -60,23 +57,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
+    final ctaText = c.isDark ? AppColors.nikeBlack : AppColors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new, color: c.text, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Change Password',
           style: TextStyle(
-            color: Colors.white,
+            color: c.text,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -104,14 +97,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           _obscureCurrent
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           size: 20,
                         ),
                         onPressed: () =>
                             setState(() => _obscureCurrent = !_obscureCurrent),
                       ),
-                      validator: (v) =>
-                          (v == null || v.isEmpty) ? 'Enter your current password' : null,
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Enter your current password'
+                          : null,
                     ),
 
                     const SizedBox(height: 24),
@@ -126,7 +120,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           _obscureNew
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           size: 20,
                         ),
                         onPressed: () =>
@@ -154,7 +148,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           _obscureConfirm
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           size: 20,
                         ),
                         onPressed: () =>
@@ -162,7 +156,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Confirm your password';
-                        if (v != _newController.text) return 'Passwords do not match';
+                        if (v != _newController.text) {
+                          return 'Passwords do not match';
+                        }
                         return null;
                       },
                     ),
@@ -172,38 +168,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
               const SizedBox(height: 40),
 
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: Colors.black,
-                    disabledBackgroundColor: AppColors.gold.withAlpha(100),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.black,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : const Text(
-                          'Update Password',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                child: _isLoading
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: ctaText,
+                          strokeWidth: 2.5,
                         ),
-                ),
+                      )
+                    : const Text('UPDATE PASSWORD'),
               ),
             ],
           ),

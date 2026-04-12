@@ -76,15 +76,17 @@ class TaskDetailSheet extends StatelessWidget {
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.goldDim,
+                          color: AppColors.hoverGray,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '${minutes}m',
-                          style: const TextStyle(
-                            color: AppColors.gold,
+                          style: TextStyle(
+                            color: c.textMuted,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -110,18 +112,18 @@ class TaskDetailSheet extends StatelessWidget {
                 // ── Why this matters ───────────────────────────────────────
                 if (explanation != null && explanation.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  const _SectionLabel(
+                  _SectionLabel(
                     icon: Icons.lightbulb_outline,
                     label: 'Why this matters',
+                    color: c.text,
                   ),
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.goldDim,
+                      color: c.surfaceVariant,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: AppColors.gold.withAlpha(60)),
+                      border: Border.all(color: c.border),
                     ),
                     child: Text(
                       explanation,
@@ -137,9 +139,10 @@ class TaskDetailSheet extends StatelessWidget {
                 // ── Step-by-step guide ─────────────────────────────────────
                 if (rawGuide.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  const _SectionLabel(
+                  _SectionLabel(
                     icon: Icons.route_outlined,
                     label: 'Step-by-step guide',
+                    color: c.text,
                   ),
                   const SizedBox(height: 10),
                   ...rawGuide.map((s) {
@@ -163,19 +166,20 @@ class TaskDetailSheet extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: AppColors.successGreen,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      icon: const Icon(Icons.check_circle_outline,
-                          color: Colors.white),
+                      icon: const Icon(
+                        Icons.check_circle_outline,
+                        color: AppColors.white,
+                      ),
                       label: const Text(
                         'Mark as done',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),
@@ -192,7 +196,7 @@ class TaskDetailSheet extends StatelessWidget {
   }
 }
 
-// ── Task status icon (reusable across list cards and the detail sheet) ─────────
+// ── Task status icon ──────────────────────────────────────────────────────────
 
 class TaskStatusIcon extends StatelessWidget {
   const TaskStatusIcon({super.key, required this.status});
@@ -201,8 +205,9 @@ class TaskStatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDone = status == TaskStatus.success;
+    final isDone   = status == TaskStatus.success;
     final isFailed = status == TaskStatus.failed;
+    final c = AppThemeColors.of(context);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
       width: 22,
@@ -210,23 +215,23 @@ class TaskStatusIcon extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: isDone
-            ? AppColors.success
+            ? AppColors.successGreen
             : isFailed
-                ? AppColors.error
+                ? AppColors.nikeRed
                 : Colors.transparent,
         border: Border.all(
           color: isDone
-              ? AppColors.success
+              ? AppColors.successGreen
               : isFailed
-                  ? AppColors.error
-                  : AppThemeColors.of(context).textMuted,
+                  ? AppColors.nikeRed
+                  : c.textMuted,
           width: 2,
         ),
       ),
       child: isDone
-          ? const Icon(Icons.check, color: Colors.white, size: 13)
+          ? const Icon(Icons.check, color: AppColors.white, size: 13)
           : isFailed
-              ? const Icon(Icons.close, color: Colors.white, size: 13)
+              ? const Icon(Icons.close, color: AppColors.white, size: 13)
               : null,
     );
   }
@@ -235,21 +240,26 @@ class TaskStatusIcon extends StatelessWidget {
 // ── Private helpers ────────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.icon, required this.label});
+  const _SectionLabel({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   final IconData icon;
   final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.gold, size: 14),
+        Icon(icon, color: color, size: 14),
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.gold,
+          style: TextStyle(
+            color: color,
             fontSize: 12,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.3,
@@ -289,16 +299,15 @@ class _GuideStepCard extends StatelessWidget {
             width: 26,
             height: 26,
             decoration: BoxDecoration(
-              color: AppColors.goldDim,
+              color: AppColors.hoverGray,
               shape: BoxShape.circle,
-              border:
-                  Border.all(color: AppColors.gold.withAlpha(80)),
+              border: Border.all(color: AppColors.borderSecondary),
             ),
             child: Center(
               child: Text(
                 '$step',
-                style: const TextStyle(
-                  color: AppColors.gold,
+                style: TextStyle(
+                  color: c.text,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
@@ -323,7 +332,9 @@ class _GuideStepCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 7),
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       color: c.surface,
                       borderRadius: BorderRadius.circular(8),
@@ -331,10 +342,10 @@ class _GuideStepCard extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'e.g. ',
                           style: TextStyle(
-                            color: AppColors.gold,
+                            color: c.textMuted,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
