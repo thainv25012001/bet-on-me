@@ -426,7 +426,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-            color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+            color: c.ctaBg,
             width: 1.5,
           ),
         ),
@@ -518,7 +518,7 @@ class _ModeTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: active
-                ? (c.isDark ? AppColors.white : AppColors.nikeBlack)
+                ? (c.ctaBg)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
@@ -529,7 +529,7 @@ class _ModeTab extends StatelessWidget {
                 icon,
                 size: 16,
                 color: active
-                    ? (c.isDark ? AppColors.nikeBlack : AppColors.white)
+                    ? (c.ctaFg)
                     : c.textMuted,
               ),
               const SizedBox(width: 6),
@@ -541,7 +541,7 @@ class _ModeTab extends StatelessWidget {
                     fontWeight:
                         active ? FontWeight.w700 : FontWeight.w500,
                     color: active
-                        ? (c.isDark ? AppColors.nikeBlack : AppColors.white)
+                        ? (c.ctaFg)
                         : c.textMuted,
                   ),
                   overflow: TextOverflow.ellipsis,

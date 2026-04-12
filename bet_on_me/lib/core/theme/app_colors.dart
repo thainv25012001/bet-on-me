@@ -114,6 +114,12 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   static AppThemeColors of(BuildContext context) =>
       Theme.of(context).extension<AppThemeColors>()!;
 
+  /// Primary CTA background: white on dark, nikeBlack on light.
+  Color get ctaBg => isDark ? AppColors.white : AppColors.nikeBlack;
+
+  /// Primary CTA foreground: nikeBlack on dark, white on light.
+  Color get ctaFg => isDark ? AppColors.nikeBlack : AppColors.white;
+
   @override
   AppThemeColors copyWith({
     Color? bg,

@@ -217,7 +217,7 @@ class DailyTasksPageState extends State<DailyTasksPage> {
     if (_loading) {
       return Center(
         child: CircularProgressIndicator(
-          color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+          color: c.ctaBg,
         ),
       );
     }
@@ -226,7 +226,7 @@ class DailyTasksPageState extends State<DailyTasksPage> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+      color: c.ctaBg,
       backgroundColor: c.surface,
       child: CustomScrollView(
         slivers: [
@@ -310,6 +310,7 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppThemeColors.of(context);
     final progress = total == 0 ? 0.0 : done / total;
     final allDone = total > 0 && done == total;
 
@@ -330,10 +331,10 @@ class _SummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: allDone
             ? AppColors.successGreen.withAlpha(20)
-            : AppThemeColors.of(context).surfaceVariant,
+            : c.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: allDone ? AppColors.successGreen : AppThemeColors.of(context).border,
+          color: allDone ? AppColors.successGreen : c.border,
         ),
       ),
       child: Column(
@@ -348,9 +349,7 @@ class _SummaryCard extends StatelessWidget {
                 child: Text(
                   message,
                   style: TextStyle(
-                    color: allDone
-                        ? AppColors.successGreen
-                        : AppThemeColors.of(context).text,
+                    color: allDone ? AppColors.successGreen : c.text,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -378,7 +377,7 @@ class _SummaryCard extends StatelessWidget {
               builder: (_, value, _) => LinearProgressIndicator(
                 value: value,
                 minHeight: 6,
-                backgroundColor: AppThemeColors.of(context).border,
+                backgroundColor: c.border,
                 valueColor: AlwaysStoppedAnimation<Color>(
                     allDone ? AppColors.successGreen : AppColors.streakOrange),
               ),
@@ -497,21 +496,7 @@ class _TaskCard extends StatelessWidget {
         duration: const Duration(milliseconds: 280),
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: task.isDone
-              ? AppColors.successGreen.withAlpha(20)
-              : task.isFailed
-                  ? AppColors.nikeRed.withAlpha(15)
-                  : c.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: task.isDone
-                ? AppColors.successGreen.withAlpha(100)
-                : task.isFailed
-                    ? AppColors.nikeRed.withAlpha(80)
-                    : c.border,
-          ),
-        ),
+        decoration: taskStatusDecoration(task.status, c, defaultColor: c.surface),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -629,7 +614,7 @@ class _EmptyState extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Icon(Icons.task_alt_outlined,
-                  color: AppThemeColors.of(context).text, size: 40),
+                  color: c.text, size: 40),
             ),
             const SizedBox(height: 20),
             Text(
@@ -781,8 +766,8 @@ class _DayCompleteSheetState extends State<_DayCompleteSheet> {
                   : FilledButton(
                       onPressed: _claiming ? null : _claim,
                       style: FilledButton.styleFrom(
-                        backgroundColor: c.isDark ? AppColors.white : AppColors.nikeBlack,
-                        foregroundColor: c.isDark ? AppColors.nikeBlack : AppColors.white,
+                        backgroundColor: c.ctaBg,
+                        foregroundColor: c.ctaFg,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -793,7 +778,7 @@ class _DayCompleteSheetState extends State<_DayCompleteSheet> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                color: c.isDark ? AppColors.nikeBlack : AppColors.white,
+                                color: c.ctaFg,
                                 strokeWidth: 2,
                               ),
                             )
@@ -834,7 +819,7 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: 16),
           TextButton(
             onPressed: onRetry,
-            style: TextButton.styleFrom(foregroundColor: AppThemeColors.of(context).text),
+            style: TextButton.styleFrom(foregroundColor: c.text),
             child: const Text('Try again'),
           ),
         ],

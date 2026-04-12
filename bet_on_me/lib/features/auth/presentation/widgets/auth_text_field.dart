@@ -50,7 +50,7 @@ class AuthTextField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-            color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+            color: c.ctaBg,
             width: 1.5,
           ),
         ),

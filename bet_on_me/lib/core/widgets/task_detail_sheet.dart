@@ -2,6 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:bet_on_me/core/constants/app_status.dart';
 import 'package:bet_on_me/core/theme/app_colors.dart';
 
+/// Returns a [BoxDecoration] styled for a task's status.
+///
+/// Pass [defaultColor] to control the neutral (pending) background;
+/// defaults to [AppThemeColors.surface].
+BoxDecoration taskStatusDecoration(
+  String status,
+  AppThemeColors c, {
+  Color? defaultColor,
+}) =>
+    BoxDecoration(
+      color: status == TaskStatus.success
+          ? AppColors.successGreen.withAlpha(20)
+          : status == TaskStatus.failed
+              ? AppColors.nikeRed.withAlpha(15)
+              : defaultColor ?? c.surface,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(
+        color: status == TaskStatus.success
+            ? AppColors.successGreen.withAlpha(100)
+            : status == TaskStatus.failed
+                ? AppColors.nikeRed.withAlpha(80)
+                : c.border,
+      ),
+    );
+
 /// Draggable bottom sheet that shows full task detail — description,
 /// "why this matters" explanation, step-by-step guide, and optional
 /// "Mark as done" button.

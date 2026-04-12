@@ -73,7 +73,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final c = AppThemeColors.of(context);
-    final ctaText = c.isDark ? AppColors.nikeBlack : AppColors.white;
 
     return Scaffold(
       appBar: AppBar(
@@ -201,7 +200,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
-                          color: ctaText,
+                          color: c.ctaFg,
                           strokeWidth: 2.5,
                         ),
                       )

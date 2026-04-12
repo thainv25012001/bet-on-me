@@ -400,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: _loadGoals,
-        color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+        color: c.ctaBg,
         backgroundColor: c.surface,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

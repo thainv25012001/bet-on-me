@@ -267,7 +267,7 @@ class _PlanCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive
-              ? (c.isDark ? AppColors.white : AppColors.nikeBlack)
+              ? c.ctaBg
               : isAdvanced
                   ? AppColors.streakOrange.withAlpha(100)
                   : c.border,

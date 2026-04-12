@@ -173,8 +173,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   child: FilledButton(
                     onPressed: () => Navigator.pop(ctx, true),
                     style: FilledButton.styleFrom(
-                      backgroundColor: c.isDark ? AppColors.white : AppColors.nikeBlack,
-                      foregroundColor: c.isDark ? AppColors.nikeBlack : AppColors.white,
+                      backgroundColor: c.ctaBg,
+                      foregroundColor: c.ctaFg,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
@@ -446,7 +446,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       body: _loading
           ? Center(
               child: CircularProgressIndicator(
-                color: c.isDark ? AppColors.white : AppColors.nikeBlack,
+                color: c.ctaBg,
               ),
             )
           : _currentStatus == GoalStatus.draft
@@ -563,8 +563,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             child: FilledButton(
               onPressed: _unlocking ? null : _unlock,
               style: FilledButton.styleFrom(
-                backgroundColor: c.isDark ? AppColors.white : AppColors.nikeBlack,
-                foregroundColor: c.isDark ? AppColors.nikeBlack : AppColors.white,
+                backgroundColor: c.ctaBg,
+                foregroundColor: c.ctaFg,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
@@ -575,7 +575,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                        color: c.isDark ? AppColors.nikeBlack : AppColors.white,
+                        color: c.ctaFg,
                         strokeWidth: 2,
                       ),
                     )
@@ -1010,21 +1010,7 @@ class _DayTaskCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: status == TaskStatus.success
-              ? AppColors.successGreen.withAlpha(20)
-              : status == TaskStatus.failed
-                  ? AppColors.nikeRed.withAlpha(15)
-                  : c.bg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: status == TaskStatus.success
-                ? AppColors.successGreen.withAlpha(100)
-                : status == TaskStatus.failed
-                    ? AppColors.nikeRed.withAlpha(80)
-                    : c.border,
-          ),
-        ),
+        decoration: taskStatusDecoration(status, c, defaultColor: c.bg),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1076,13 +1062,13 @@ class _DayTaskCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppThemeColors.of(context).surfaceVariant,
+                      color: c.surfaceVariant,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       '${minutes}m',
                       style: TextStyle(
-                        color: AppThemeColors.of(context).textMuted,
+                        color: c.textMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
